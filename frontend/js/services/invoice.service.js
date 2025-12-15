@@ -71,7 +71,7 @@ export async function deleteInvoiceDocument(facturaId, documentoId) {
  * @returns {Promise<Object>} Response
  */
 export async function addInvoiceDocument(id, formData) {
-    return upload(`/facturas/${id}/documentos/correccion`, formData);
+    return upload(`/facturas/${id}/documentos`, formData);
 }
 
 /**

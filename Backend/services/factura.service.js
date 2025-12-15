@@ -390,10 +390,10 @@ const agregarDocumento = async (facturaId, archivo, tipoDocumento, nombrePersona
         const insertQuery = `
             INSERT INTO factura_documentos (
                 factura_id, tipo_documento, nombre_archivo, nombre_personalizado,
-                ruta_archivo, usuario_carga_id, observacion
+                ruta_archivo, observacion
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7)
-            RETURNING documento_id, nombre_archivo, nombre_personalizado, fecha_carga
+            VALUES ($1, $2, $3, $4, $5, $6)
+            RETURNING documento_id, nombre_archivo, nombre_personalizado, fecha_subida
         `;
 
         const result = await client.query(insertQuery, [
@@ -402,7 +402,6 @@ const agregarDocumento = async (facturaId, archivo, tipoDocumento, nombrePersona
             archivo.filename,
             nombrePersonalizado || archivo.originalname,
             filePath,
-            userId,
             observacion
         ]);
 

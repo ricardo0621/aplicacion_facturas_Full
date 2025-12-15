@@ -3,7 +3,7 @@
  * Displays invoice details with workflow actions
  */
 
-import { getInvoiceById, approveInvoice, rejectInvoice, markAsPaid, annulInvoice } from '../services/invoice.service.js';
+import { getInvoiceById, approveInvoice, rejectInvoice, markAsPaid, annulInvoice, addInvoiceDocument } from '../services/invoice.service.js';
 import { formatCurrency, formatDate, formatDateTime, getEstadoLabel, getEstadoBadgeColor, getRoleLabel, getAccionLabel } from '../utils/formatters.js';
 import { showToast, showSuccess, showError } from '../components/toast.js';
 import { showModal, showConfirm, hideModal } from '../components/modal.js';
@@ -327,28 +327,84 @@ function attachActionListeners() {
 
     // Annul
     document.getElementById('btnAnular')?.addEventListener('click', handleAnnul);
+
+    // Add Support (RUTA_3)
+    document.getElementById('btnCorregirSimple')?.addEventListener('click', handleAddSupport);
 }
 
 /**
  * Handle approve action
  */
 async function handleApprove() {
-    showConfirm(
-        'Aprobar Factura',
-        '¿Está seguro que desea aprobar esta factura?',
-        async () => {
-            try {
-                await approveInvoice(currentInvoice.factura_id);
-                showSuccess('Éxito', 'Factura aprobada correctamente');
-                // Reload invoice
-                const updated = await getInvoiceById(currentInvoice.factura_id);
-                currentInvoice = updated;
-                renderInvoiceDetail(document.getElementById('viewContainer'));
-            } catch (error) {
-                showError('Error', error.message || 'No se pudo aprobar la factura');
-            }
+    const user = getCurrentUser();
+
+    // RUTA_3 validation: Check if support document exists
+    if (hasRole(CONSTANTS.ROLES.RUTA_3)) {
+        const hasSupportDoc = currentInvoice.documentos?.some(doc =>
+            doc.tipo_documento === 'SOPORTE' || doc.tipo_documento === 'SOPORTE_INICIAL'
+        );
+
+        if (!hasSupportDoc) {
+            showError(
+                'Documento Requerido',
+                'Debe agregar al menos un documento de soporte antes de aprobar. Use el botón "📎 Agregar Soporte".'
+            );
+            return;
         }
-    );
+    }
+
+    const content = document.createElement('div');
+    content.innerHTML = `
+        <p style="margin-bottom: 1rem; color: var(--gray-300);">
+            ¿Está seguro que desea aprobar esta factura?
+        </p>
+        <div class="form-group">
+            <label class="form-label">Observación *</label>
+            <textarea 
+                class="form-textarea" 
+                id="approveObservation" 
+                placeholder="Ingrese una observación (obligatorio)..."
+                rows="3"
+                required
+            ></textarea>
+        </div>
+    `;
+
+    showModal({
+        title: 'Aprobar Factura',
+        content,
+        buttons: [
+            {
+                text: 'Cancelar',
+                class: 'btn-secondary'
+            },
+            {
+                text: 'Aprobar',
+                class: 'btn-success',
+                onClick: async () => {
+                    const observacion = document.getElementById('approveObservation').value.trim();
+
+                    if (!observacion) {
+                        showError('Error', 'Debe ingresar una observación');
+                        return;
+                    }
+
+                    try {
+                        await approveInvoice(currentInvoice.factura_id, observacion);
+                        showSuccess('Éxito', 'Factura aprobada correctamente');
+                        hideModal();
+                        // Reload invoice
+                        const updated = await getInvoiceById(currentInvoice.factura_id);
+                        currentInvoice = updated;
+                        renderInvoiceDetail(document.getElementById('viewContainer'));
+                    } catch (error) {
+                        showError('Error', error.message || 'No se pudo aprobar la factura');
+                    }
+                },
+                closeOnClick: false
+            }
+        ]
+    });
 }
 
 /**
@@ -471,6 +527,94 @@ function handleAnnul() {
                         renderInvoiceDetail(document.getElementById('viewContainer'));
                     } catch (error) {
                         showError('Error', error.message || 'No se pudo anular la factura');
+                    }
+                },
+                closeOnClick: false
+            }
+        ]
+    });
+}
+
+/**
+ * Handle add support document (RUTA_3)
+ */
+function handleAddSupport() {
+    const content = document.createElement('div');
+    content.innerHTML = `
+        <div class="form-group">
+            <label class="form-label">Documento de Soporte *</label>
+            <input 
+                type="file" 
+                class="form-input" 
+                id="supportFile" 
+                accept=".pdf,.jpg,.jpeg,.png"
+                required
+            />
+            <small style="color: var(--gray-400); display: block; margin-top: 0.25rem;">
+                Formatos permitidos: PDF, JPG, PNG (Máx. 10MB)
+            </small>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Observación *</label>
+            <textarea 
+                class="form-textarea" 
+                id="supportObservation" 
+                placeholder="Ingrese una observación sobre el documento..."
+                rows="3"
+                required
+            ></textarea>
+        </div>
+    `;
+
+    showModal({
+        title: 'Agregar Documento de Soporte',
+        content,
+        buttons: [
+            {
+                text: 'Cancelar',
+                class: 'btn-secondary'
+            },
+            {
+                text: 'Subir Documento',
+                class: 'btn-primary',
+                onClick: async () => {
+                    const fileInput = document.getElementById('supportFile');
+                    const observacion = document.getElementById('supportObservation').value.trim();
+
+                    if (!fileInput.files || fileInput.files.length === 0) {
+                        showError('Error', 'Debe seleccionar un archivo');
+                        return;
+                    }
+
+                    if (!observacion) {
+                        showError('Error', 'Debe ingresar una observación');
+                        return;
+                    }
+
+                    const file = fileInput.files[0];
+
+                    // Validate file size (10MB)
+                    if (file.size > 10 * 1024 * 1024) {
+                        showError('Error', 'El archivo no debe superar 10MB');
+                        return;
+                    }
+
+                    try {
+                        const formData = new FormData();
+                        formData.append('documento', file);
+                        formData.append('tipo_documento', 'SOPORTE');
+                        formData.append('observacion', observacion);
+
+                        await addInvoiceDocument(currentInvoice.factura_id, formData);
+                        showSuccess('Éxito', 'Documento de soporte agregado correctamente');
+                        hideModal();
+
+                        // Reload invoice
+                        const updated = await getInvoiceById(currentInvoice.factura_id);
+                        currentInvoice = updated;
+                        renderInvoiceDetail(document.getElementById('viewContainer'));
+                    } catch (error) {
+                        showError('Error', error.message || 'No se pudo agregar el documento');
                     }
                 },
                 closeOnClick: false
