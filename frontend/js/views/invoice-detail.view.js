@@ -211,7 +211,15 @@ function renderHistory(historial) {
                     <div style="position: absolute; left: -1.5rem; top: 0.25rem; width: 12px; height: 12px; border-radius: 50%; background: var(--primary-500); border: 2px solid var(--bg-dark-secondary);"></div>
                     <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: var(--radius-md); padding: 1rem;">
                         <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.5rem;">
-                            <strong style="color: var(--primary-400);">${getAccionLabel(item.accion)}</strong>
+                            <div>
+                                <strong style="color: var(--primary-400);">${getAccionLabel(item.accion)}</strong>
+                                ${item.estado_nuevo ? `
+                                    <div style="margin-top: 0.25rem;">
+                                        <span style="font-size: 0.75rem; color: var(--gray-400);">→ </span>
+                                        <span style="font-size: 0.75rem; color: var(--success-400);">${item.estado_nuevo}</span>
+                                    </div>
+                                ` : ''}
+                            </div>
                             <span style="font-size: 0.75rem; color: var(--gray-500);">${formatDateTime(item.fecha_accion)}</span>
                         </div>
                         <p style="font-size: 0.875rem; color: var(--gray-300); margin-bottom: 0.25rem;">
@@ -271,7 +279,7 @@ function renderActions(invoice, user) {
                 ✕ Rechazar
             </button>
             <button class="btn btn-warning" id="btnCorregirSimple" style="width: 100%; margin-bottom: 0.5rem;">
-                ✏️ Agregar Observación
+                📎 Agregar Soporte
             </button>
         `);
     }

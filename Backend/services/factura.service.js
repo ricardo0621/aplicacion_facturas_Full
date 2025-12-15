@@ -248,7 +248,27 @@ const procesarFactura = async (facturaId, accion, userId, datosAdicionales = {})
             }
         }
 
-        // 2. Calcular Transición (sin estadoDestinoRechazo, ahora es automático)
+        // 2. Si es RECHAZO desde RUTA_3, buscar el estado RUTA_2 específico que aprobó
+        let estadoRuta2Aprobador = null;
+        if (accion === ACCIONES.RECHAZAR && factura.estado_codigo === ESTADOS.RUTA_3) {
+            // Buscar en el historial la última aprobación desde un estado RUTA_2
+            const historialRes = await client.query(`
+                SELECT e.codigo as estado_codigo
+                FROM factura_historial h
+                JOIN estados e ON h.estado_anterior_id = e.estado_id
+                WHERE h.factura_id = $1 
+                  AND h.accion = 'APROBAR'
+                  AND e.codigo LIKE 'RUTA_2%'
+                ORDER BY h.fecha_accion DESC
+                LIMIT 1
+            `, [facturaId]);
+
+            if (historialRes.rows.length > 0) {
+                estadoRuta2Aprobador = historialRes.rows[0].estado_codigo;
+            }
+        }
+
+        // 3. Calcular Transición
         let estadoRetornoCorreccionCodigo = null;
         if (accion === ACCIONES.CORREGIR && factura.estado_retorno_id) {
             estadoRetornoCorreccionCodigo = await getEstadoCodigoById(client, factura.estado_retorno_id);
@@ -257,7 +277,8 @@ const procesarFactura = async (facturaId, accion, userId, datosAdicionales = {})
         const transicion = calcularTransicion(
             factura.estado_codigo,
             accion,
-            estadoRetornoCorreccionCodigo
+            estadoRetornoCorreccionCodigo,
+            estadoRuta2Aprobador
         );
 
         const nuevoEstadoId = await getEstadoIdByCodigo(client, transicion.nuevoEstado);

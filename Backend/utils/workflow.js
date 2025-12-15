@@ -10,9 +10,10 @@ const { ESTADOS, ESTADOS_RUTA_2, ACCIONES } = require('../constants');
  * @param {string} estadoActualCodigo - Código del estado actual (ej: RUTA_1)
  * @param {string} accion - Acción a realizar (APROBAR, RECHAZAR, etc.)
  * @param {string} [estadoRetornoCorreccion] - (Opcional) A dónde volver tras corregir (ej: RUTA_3)
+ * @param {string} [estadoRuta2Aprobador] - (Opcional) Estado RUTA_2 específico que aprobó (para rechazos desde RUTA_3)
  * @returns {Object} - { nuevoEstado, esRechazo, estadoRetorno? }
  */
-const calcularTransicion = (estadoActualCodigo, accion, estadoRetornoCorreccion = null) => {
+const calcularTransicion = (estadoActualCodigo, accion, estadoRetornoCorreccion = null, estadoRuta2Aprobador = null) => {
 
     // 1. ANULACIÓN (Solo posible en RUTA_1)
     if (accion === ACCIONES.ANULAR) {
@@ -64,7 +65,8 @@ const calcularTransicion = (estadoActualCodigo, accion, estadoRetornoCorreccion 
         if (estadoActualCodigo === ESTADOS.RUTA_4) {
             destino = ESTADOS.RUTA_3;
         } else if (estadoActualCodigo === ESTADOS.RUTA_3) {
-            destino = ESTADOS.RUTA_2; // Por defecto, puede ser cualquier Ruta 2
+            // Si tenemos el estado específico de RUTA_2 que aprobó, usarlo
+            destino = estadoRuta2Aprobador || ESTADOS.RUTA_2;
         } else if (ESTADOS_RUTA_2.includes(estadoActualCodigo)) {
             destino = ESTADOS.RUTA_1;
         } else {
