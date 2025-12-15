@@ -159,7 +159,7 @@ const crearFacturaConMultiplesArchivos = async (facturaData, files, tiposDocumen
         const nuevaFactura = (await client.query(insertQuery, [
             numero_factura, proveedorId, fecha_emision, monto, concepto || null,
             estadoInicialId, userId, archivoFactura.filename,
-            rolAprobadorRuta2, proveedor.nit
+            rolAprobadorRuta2, nit_proveedor
         ])).rows[0];
 
         // 6. Guardar TODOS los archivos en factura_documentos
@@ -171,16 +171,15 @@ const crearFacturaConMultiplesArchivos = async (facturaData, files, tiposDocumen
             await client.query(`
                 INSERT INTO factura_documentos (
                     factura_id, tipo_documento, nombre_archivo, nombre_personalizado,
-                    ruta_archivo, usuario_carga_id, observacion
+                    ruta_archivo, observacion
                 )
-                VALUES ($1, $2, $3, $4, $5, $6, $7)
+                VALUES ($1, $2, $3, $4, $5, $6)
             `, [
                 nuevaFactura.factura_id,
                 tipo,
                 file.filename,
                 file.originalname,
                 filePath,
-                userId,
                 `Documento ${tipo} - Carga inicial`
             ]);
         }
@@ -736,6 +735,21 @@ const obtenerFacturaPorId = async (id) => {
     }
 };
 
+const obtenerDocumentosFactura = async (id) => {
+    const client = await db.connect();
+    try {
+        const res = await client.query(`
+            SELECT *
+            FROM factura_documentos
+            WHERE factura_id = $1
+            ORDER BY fecha_subida ASC
+        `, [id]);
+        return res.rows;
+    } finally {
+        client.release();
+    }
+};
+
 const obtenerHistorialFactura = async (id) => {
     const client = await db.connect();
     try {
@@ -746,7 +760,7 @@ const obtenerHistorialFactura = async (id) => {
             LEFT JOIN estados ea ON h.estado_anterior_id = ea.estado_id
             JOIN estados en ON h.estado_nuevo_id = en.estado_id
             WHERE h.factura_id = $1
-            ORDER BY h.fecha_transicion DESC
+            ORDER BY h.fecha_accion DESC
         `, [id]);
         return res.rows;
     } finally {
@@ -1245,6 +1259,7 @@ module.exports = {
     procesarFactura,
     listarFacturas,
     obtenerFacturaPorId,
+    obtenerDocumentosFactura,
     obtenerHistorialFactura,
     obtenerEstadisticas,
     agregarDocumento,

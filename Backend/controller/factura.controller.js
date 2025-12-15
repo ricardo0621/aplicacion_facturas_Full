@@ -142,9 +142,19 @@ const obtenerFactura = async (req, res) => {
             });
         }
 
+        // Cargar documentos adjuntos
+        const documentos = await facturaService.obtenerDocumentosFactura(id);
+
+        // Cargar historial
+        const historial = await facturaService.obtenerHistorialFactura(id);
+
         res.status(200).json({
             success: true,
-            factura
+            factura: {
+                ...factura,
+                documentos,
+                historial
+            }
         });
 
     } catch (error) {

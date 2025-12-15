@@ -21,7 +21,8 @@ export async function getInvoices(filters = {}) {
  * @returns {Promise<Object>} Invoice details
  */
 export async function getInvoiceById(id) {
-    return get(`/facturas/${id}`);
+    const response = await get(`/facturas/${id}`);
+    return response.factura || response;
 }
 
 /**
