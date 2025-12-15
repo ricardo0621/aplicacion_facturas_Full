@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resumen - Gestor de Facturas</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .main-content {
+            flex: 1;
+            padding: var(--spacing-xl) 0;
+        }
+
+        .user-menu {
+            position: relative;
+        }
+
+        .user-button {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 0.5rem 1rem;
+            border-radius: var(--radius-full);
+            color: var(--gray-100);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .user-button:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-600), var(--primary-700));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.875rem;
+        }
+
+        .dropdown-menu {
+            position: absolute;
+            top: calc(100% + 0.5rem);
+            right: 0;
+            background: var(--bg-dark-secondary);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-xl);
+            min-width: 200px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all var(--transition-base);
+            z-index: var(--z-dropdown);
+        }
+
+        .dropdown-menu.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .dropdown-item {
+            display: block;
+            padding: 0.75rem 1rem;
+            color: var(--gray-200);
+            text-decoration: none;
+            transition: background var(--transition-fast);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .dropdown-item:last-child {
+            border-bottom: none;
+        }
+
+        .dropdown-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--gray-50);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: var(--spacing-lg);
+            margin-bottom: var(--spacing-2xl);
+        }
+
+        .stat-card {
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-xl);
+            position: relative;
+            overflow: hidden;
+            transition: all var(--transition-base);
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: linear-gradient(180deg, var(--primary-500), var(--primary-700));
+        }
+
+        .stat-card.warning::before {
+            background: linear-gradient(180deg, var(--warning-500), var(--warning-700));
+        }
+
+        .stat-card.success::before {
+            background: linear-gradient(180deg, var(--success-500), var(--success-700));
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--gray-400);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--gray-50);
+            line-height: 1;
+        }
+
+        .stat-icon {
+            position: absolute;
+            top: var(--spacing-lg);
+            right: var(--spacing-lg);
+            font-size: 3rem;
+            opacity: 0.1;
+        }
+
+        .quick-actions {
+            display: flex;
+            gap: var(--spacing-md);
+            flex-wrap: wrap;
+            margin-bottom: var(--spacing-2xl);
+        }
+
+        .welcome-section {
+            margin-bottom: var(--spacing-2xl);
+        }
+
+        .welcome-title {
+            font-size: 2rem;
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .welcome-subtitle {
+            color: var(--gray-400);
+        }
+
+        #viewContainer {
+            min-height: 400px;
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: var(--danger-500);
+            color: white;
+            border-radius: var(--radius-full);
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+            font-weight: 700;
+            min-width: 20px;
+            text-align: center;
+        }
+
+        .navbar-link {
+            position: relative;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container navbar-content">
+            <div class="navbar-brand">
+                <span>📄</span>
+                Gestor de Facturas
+            </div>
+
+            <ul class="navbar-menu" id="navbarMenu">
+                <li><a href="#dashboard" class="navbar-link active" data-view="dashboard">Resumen</a></li>
+                <li><a href="#facturas" class="navbar-link" data-view="facturas">Facturas</a></li>
+                <li><a href="#usuarios" class="navbar-link admin-only hidden" data-view="usuarios">Usuarios</a></li>
+                <li><a href="#proveedores" class="navbar-link admin-only hidden" data-view="proveedores">Proveedores</a>
+                </li>
+                <li><a href="#tipos-soporte" class="navbar-link admin-only hidden" data-view="tipos-soporte">Tipos de
+                        Soporte</a></li>
+                <li><a href="#busqueda" class="navbar-link" data-view="busqueda">Búsqueda</a></li>
+            </ul>
+
+            <div class="user-menu">
+                <button class="user-button" id="userButton">
+                    <div class="user-avatar" id="userAvatar">U</div>
+                    <span id="userName">Usuario</span>
+                    <span>▼</span>
+                </button>
+                <div class="dropdown-menu" id="userDropdown">
+                    <a href="#perfil" class="dropdown-item">Mi Perfil</a>
+                    <a href="#" class="dropdown-item" id="logoutBtn">Cerrar Sesión</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <!-- View Container - Content will be loaded here -->
+            <div id="viewContainer">
+                <!-- Dashboard View (Default) -->
+                <div id="dashboardView">
+                    <div class="welcome-section">
+                        <h1 class="welcome-title">Bienvenido, <span id="welcomeName">Usuario</span></h1>
+                        <p class="welcome-subtitle">Aquí está el resumen de tus facturas</p>
+                    </div>
+
+                    <!-- Statistics -->
+                    <div class="stats-grid" id="statsGrid">
+                        <div class="stat-card">
+                            <div class="stat-icon">📋</div>
+                            <div class="stat-label">Facturas Pendientes</div>
+                            <div class="stat-value" id="statPendientes">0</div>
+                        </div>
+                        <div class="stat-card warning">
+                            <div class="stat-icon">⏳</div>
+                            <div class="stat-label">En Mi Ruta</div>
+                            <div class="stat-value" id="statMiRuta">0</div>
+                        </div>
+                        <div class="stat-card success">
+                            <div class="stat-icon">✓</div>
+                            <div class="stat-label">Finalizadas</div>
+                            <div class="stat-value" id="statFinalizadas">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">📊</div>
+                            <div class="stat-label">Total del Mes</div>
+                            <div class="stat-value" id="statTotal">0</div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="quick-actions" id="quickActions">
+                        <button class="btn btn-primary ruta1-only hidden" id="btnNuevaFactura">
+                            ➕ Nueva Factura
+                        </button>
+                        <button class="btn btn-secondary" id="btnVerFacturas">
+                            📋 Ver Todas las Facturas
+                        </button>
+                        <button class="btn btn-secondary" id="btnBusqueda">
+                            🔍 Búsqueda Avanzada
+                        </button>
+                    </div>
+
+                    <!-- Recent Invoices -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Facturas Recientes</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-container">
+                                <table class="table" id="recentInvoicesTable">
+                                    <thead>
+                                        <tr>
+                                            <th>N° Factura</th>
+                                            <th>Proveedor</th>
+                                            <th>Monto</th>
+                                            <th>Estado</th>
+                                            <th>Fecha</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="recentInvoicesBody">
+                                        <tr>
+                                            <td colspan="6" class="text-center">Cargando...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script type="module" src="index.js"></script>
+    <script type="module" src="app.js"></script>
+</body>
+
+</html>
