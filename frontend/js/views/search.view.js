@@ -132,6 +132,7 @@ export async function renderAdvancedSearchView(container) {
                                 <th>Fecha</th>
                                 <th>Monto</th>
                                 <th>Estado</th>
+                                <th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody id="resultsTableBody">
@@ -238,7 +239,7 @@ function renderResults() {
     if (searchResults.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="5" class="text-center" style="color: var(--gray-400);">
+                <td colspan="6" class="text-center" style="color: var(--gray-400);">
                     No se encontraron resultados
                 </td>
             </tr>
@@ -260,6 +261,11 @@ function renderResults() {
                     <span class="badge badge-${badgeColor}">
                         ${estadoLabel}
                     </span>
+                </td>
+                <td>
+                    <button class="btn btn-sm btn-primary" onclick="window.viewInvoiceDetail(${factura.factura_id})">
+                        👁️ Ver
+                    </button>
                 </td>
             </tr>
         `;
@@ -283,7 +289,7 @@ function clearFilters() {
     if (tbody) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="5" class="text-center" style="color: var(--gray-400);">
+                <td colspan="6" class="text-center" style="color: var(--gray-400);">
                     Utiliza los filtros para buscar facturas
                 </td>
             </tr>

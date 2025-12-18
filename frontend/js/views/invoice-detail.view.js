@@ -291,9 +291,57 @@ function renderActions(invoice, user) {
         `);
     }
 
-    // RUTA_2 actions (any direction)
-    const isRuta2 = Object.values(CONSTANTS.ESTADOS).filter(e => e.startsWith('RUTA_2')).includes(estado);
-    if (hasAnyRole(Object.values(CONSTANTS.ROLES).filter(r => r.startsWith('RUTA_2'))) && isRuta2) {
+    // RUTA_2 actions - Each direccion can only approve invoices in their specific state
+    // Dirección Administrativa
+    if (hasRole(CONSTANTS.ROLES.RUTA_2_DIRECCION_ADMINISTRATIVA) && estado === CONSTANTS.ESTADOS.RUTA_2_DIRECCION_ADMINISTRATIVA) {
+        buttons.push(`
+            <button class="btn btn-success" id="btnAprobar" style="width: 100%; margin-bottom: 0.5rem;">
+                ✓ Aprobar
+            </button>
+            <button class="btn btn-danger" id="btnRechazar" style="width: 100%; margin-bottom: 0.5rem;">
+                ✕ Rechazar
+            </button>
+        `);
+    }
+
+    // Dirección Financiera
+    if (hasRole(CONSTANTS.ROLES.RUTA_2_DIRECCION_FINANCIERA) && estado === CONSTANTS.ESTADOS.RUTA_2_DIRECCION_FINANCIERA) {
+        buttons.push(`
+            <button class="btn btn-success" id="btnAprobar" style="width: 100%; margin-bottom: 0.5rem;">
+                ✓ Aprobar
+            </button>
+            <button class="btn btn-danger" id="btnRechazar" style="width: 100%; margin-bottom: 0.5rem;">
+                ✕ Rechazar
+            </button>
+        `);
+    }
+
+    // Dirección Médica
+    if (hasRole(CONSTANTS.ROLES.RUTA_2_DIRECCION_MEDICA) && estado === CONSTANTS.ESTADOS.RUTA_2_DIRECCION_MEDICA) {
+        buttons.push(`
+            <button class="btn btn-success" id="btnAprobar" style="width: 100%; margin-bottom: 0.5rem;">
+                ✓ Aprobar
+            </button>
+            <button class="btn btn-danger" id="btnRechazar" style="width: 100%; margin-bottom: 0.5rem;">
+                ✕ Rechazar
+            </button>
+        `);
+    }
+
+    // Dirección General
+    if (hasRole(CONSTANTS.ROLES.RUTA_2_DIRECCION_GENERAL) && estado === CONSTANTS.ESTADOS.RUTA_2_DIRECCION_GENERAL) {
+        buttons.push(`
+            <button class="btn btn-success" id="btnAprobar" style="width: 100%; margin-bottom: 0.5rem;">
+                ✓ Aprobar
+            </button>
+            <button class="btn btn-danger" id="btnRechazar" style="width: 100%; margin-bottom: 0.5rem;">
+                ✕ Rechazar
+            </button>
+        `);
+    }
+
+    // Control Interno
+    if (hasRole(CONSTANTS.ROLES.RUTA_2_CONTROL_INTERNO) && estado === CONSTANTS.ESTADOS.RUTA_2_CONTROL_INTERNO) {
         buttons.push(`
             <button class="btn btn-success" id="btnAprobar" style="width: 100%; margin-bottom: 0.5rem;">
                 ✓ Aprobar
