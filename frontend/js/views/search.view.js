@@ -44,6 +44,12 @@ export async function renderAdvancedSearchView(container) {
                             </select>
                         </div>
 
+                        <!-- Provider NIT -->
+                        <div class="form-group">
+                            <label class="form-label">NIT del Proveedor</label>
+                            <input type="text" class="form-input" id="nitProveedor" placeholder="Ej: 900123456-7">
+                        </div>
+
                         <!-- Status -->
                         <div class="form-group">
                             <label class="form-label">Estado</label>
@@ -187,6 +193,7 @@ async function handleSearch(e) {
     const filters = {
         numero_factura: document.getElementById('numeroFactura').value.trim(),
         proveedor_id: document.getElementById('proveedor').value,
+        nit: document.getElementById('nitProveedor').value.trim(),
         estado: document.getElementById('estado').value,
         direccion_aprobo: document.getElementById('direccionAprobo').value,
         fecha_desde: document.getElementById('fechaDesde').value,
