@@ -244,7 +244,7 @@ const procesarFactura = async (facturaId, accion, userId, datosAdicionales = {})
         if (accion === ACCIONES.PAGAR) {
             const validacion = await validarEvidenciaPago(facturaId, userId);
             if (validacion.requerida && !validacion.existe) {
-                throw new Error('Debe subir la evidencia de pago antes de marcar como pagada.');
+                throw new Error('Debe subir al menos un documento de soporte antes de marcar como pagada.');
             }
         }
 
@@ -359,31 +359,15 @@ const agregarDocumento = async (facturaId, archivo, tipoDocumento, nombrePersona
         const factura = facturaCheck.rows[0];
 
         // Validar permisos según tipo de documento
-        if (tipoDocumento === 'EVIDENCIA_PAGO') {
-            // Solo usuarios de Ruta 4 pueden subir evidencia de pago
-            const rolesCheck = await client.query(`
-                SELECT r.codigo FROM usuario_roles ur
-                JOIN roles r ON ur.rol_id = r.rol_id
-                WHERE ur.usuario_id = $1 AND r.codigo = 'RUTA_4'
-            `, [userId]);
+        // RUTA_3 (Contabilidad) y RUTA_4 (Tesorería) pueden subir documentos de soporte
+        const rolesCheck = await client.query(`
+            SELECT r.codigo FROM usuario_roles ur
+            JOIN roles r ON ur.rol_id = r.rol_id
+            WHERE ur.usuario_id = $1 AND (r.codigo = 'RUTA_3' OR r.codigo = 'RUTA_4')
+        `, [userId]);
 
-            if (rolesCheck.rows.length === 0) {
-                throw new Error('Solo usuarios de Tesorería (Ruta 4) pueden subir evidencia de pago.');
-            }
-        } else if (tipoDocumento === 'SOPORTE') {
-            // Solo usuarios de Ruta 3 pueden subir documentos de soporte
-            const rolesCheck = await client.query(`
-                SELECT r.codigo FROM usuario_roles ur
-                JOIN roles r ON ur.rol_id = r.rol_id
-                WHERE ur.usuario_id = $1 AND r.codigo = 'RUTA_3'
-            `, [userId]);
-
-            if (rolesCheck.rows.length === 0) {
-                throw new Error('Solo usuarios de Contabilidad (Ruta 3) pueden subir documentos de soporte.');
-            }
-        } else {
-            // Otros tipos de documentos no están permitidos después de la carga inicial
-            throw new Error('No se pueden agregar documentos de este tipo después de la carga inicial.');
+        if (rolesCheck.rows.length === 0) {
+            throw new Error('Solo usuarios de Contabilidad (Ruta 3) o Tesorería (Ruta 4) pueden agregar documentos.');
         }
 
         // Insertar documento
@@ -450,22 +434,14 @@ const eliminarDocumento = async (documentoId, userId) => {
     try {
         await client.query('BEGIN');
 
-        // Verificar que es SUPER_ADMIN
-        const rolesCheck = await client.query(`
-            SELECT r.codigo FROM usuario_roles ur
-            JOIN roles r ON ur.rol_id = r.rol_id
-            WHERE ur.usuario_id = $1 AND r.codigo = 'SUPER_ADMIN'
-        `, [userId]);
-
-        if (rolesCheck.rows.length === 0) {
-            throw new Error('Solo SUPER_ADMIN puede eliminar documentos.');
-        }
-
-        // Obtener ruta del archivo y tipo
-        const docRes = await client.query(
-            'SELECT ruta_archivo, tipo_documento FROM factura_documentos WHERE documento_id = $1',
-            [documentoId]
-        );
+        // Obtener información del documento
+        const docRes = await client.query(`
+            SELECT fd.ruta_archivo, fd.tipo_documento, f.estado_id, e.codigo as estado_codigo
+            FROM factura_documentos fd
+            JOIN facturas f ON fd.factura_id = f.factura_id
+            JOIN estados e ON f.estado_id = e.estado_id
+            WHERE fd.documento_id = $1
+        `, [documentoId]);
 
         if (docRes.rows.length === 0) {
             throw new Error('Documento no encontrado.');
@@ -473,9 +449,39 @@ const eliminarDocumento = async (documentoId, userId) => {
 
         const doc = docRes.rows[0];
 
-        // No permitir eliminar SOPORTE_INICIAL
-        if (doc.tipo_documento === 'SOPORTE_INICIAL') {
-            throw new Error('No se puede eliminar el documento de soporte inicial.');
+        // Verificar permisos
+        const rolesCheck = await client.query(`
+            SELECT r.codigo FROM usuario_roles ur
+            JOIN roles r ON ur.rol_id = r.rol_id
+            WHERE ur.usuario_id = $1 AND (r.codigo = 'SUPER_ADMIN' OR r.codigo = 'RUTA_3' OR r.codigo = 'RUTA_4')
+        `, [userId]);
+
+        if (rolesCheck.rows.length === 0) {
+            throw new Error('No tiene permisos para eliminar documentos.');
+        }
+
+        const userRole = rolesCheck.rows[0].codigo;
+
+        // SUPER_ADMIN puede eliminar cualquier documento (excepto SOPORTE_INICIAL)
+        // RUTA_3 y RUTA_4 solo pueden eliminar documentos que ellos subieron
+        if (userRole !== 'SUPER_ADMIN') {
+            // Verificar que el documento no sea FACTURA o SOPORTE_INICIAL
+            if (doc.tipo_documento === 'FACTURA' || doc.tipo_documento === 'SOPORTE_INICIAL') {
+                throw new Error('No puede eliminar este tipo de documento.');
+            }
+
+            // Verificar que la factura esté en el estado correcto
+            if (userRole === 'RUTA_3' && doc.estado_codigo !== 'RUTA_3') {
+                throw new Error('Solo puede eliminar documentos cuando la factura está en Contabilidad.');
+            }
+            if (userRole === 'RUTA_4' && doc.estado_codigo !== 'RUTA_4') {
+                throw new Error('Solo puede eliminar documentos cuando la factura está en Tesorería.');
+            }
+        } else {
+            // SUPER_ADMIN no puede eliminar SOPORTE_INICIAL
+            if (doc.tipo_documento === 'SOPORTE_INICIAL') {
+                throw new Error('No se puede eliminar el documento de soporte inicial.');
+            }
         }
 
         // Eliminar registro
@@ -552,16 +558,11 @@ const eliminarFactura = async (facturaId, userId) => {
 const validarEvidenciaPago = async (facturaId, userId) => {
     const client = await db.connect();
     try {
-        const userQuery = `SELECT requiere_evidencia_pago FROM usuarios WHERE usuario_id = $1`;
-        const userResult = await client.query(userQuery, [userId]);
-
-        if (userResult.rows.length === 0 || !userResult.rows[0].requiere_evidencia_pago) {
-            return { requerida: false, existe: true };
-        }
-
+        // Requerir al menos un documento de soporte (cualquier tipo excepto FACTURA y SOPORTE_INICIAL)
         const evidenciaQuery = `
             SELECT documento_id FROM factura_documentos
-            WHERE factura_id = $1 AND tipo_documento = 'EVIDENCIA_PAGO'
+            WHERE factura_id = $1 
+              AND tipo_documento NOT IN ('FACTURA', 'SOPORTE_INICIAL')
         `;
         const evidenciaResult = await client.query(evidenciaQuery, [facturaId]);
 
@@ -569,7 +570,6 @@ const validarEvidenciaPago = async (facturaId, userId) => {
             requerida: true,
             existe: evidenciaResult.rows.length > 0
         };
-
     } finally {
         client.release();
     }

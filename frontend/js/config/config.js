@@ -6,14 +6,14 @@
 export const CONFIG = {
     // API Configuration
     API_BASE_URL: '/api',
-    
+
     // Storage Keys
     TOKEN_KEY: 'auth_token',
     USER_KEY: 'current_user',
-    
+
     // Polling & Updates
     POLLING_INTERVAL: 30000, // 30 seconds
-    
+
     // File Upload
     MAX_FILE_SIZE: 10 * 1024 * 1024, // 10MB
     ALLOWED_FILE_TYPES: [
@@ -24,17 +24,20 @@ export const CONFIG = {
         'application/vnd.ms-excel',
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     ],
-    
+
     // Pagination
     DEFAULT_PAGE_SIZE: 20,
-    
+
     // Date Format
     DATE_FORMAT: 'DD/MM/YYYY',
     DATETIME_FORMAT: 'DD/MM/YYYY hh:mm A',
-    
+
     // Timezone
     TIMEZONE: 'America/Bogota'
 };
+
+// Export API_BASE_URL separately for convenience
+export const API_BASE_URL = CONFIG.API_BASE_URL;
 
 /**
  * Application Constants
@@ -53,7 +56,7 @@ export const CONSTANTS = {
         RUTA_3: 'RUTA_3',
         RUTA_4: 'RUTA_4'
     },
-    
+
     // Estados
     ESTADOS: {
         RUTA_1: 'RUTA_1',
@@ -68,7 +71,7 @@ export const CONSTANTS = {
         FINALIZADA: 'FINALIZADA',
         ANULADA: 'ANULADA'
     },
-    
+
     // Acciones
     ACCIONES: {
         CARGAR: 'CARGAR',
@@ -78,7 +81,7 @@ export const CONSTANTS = {
         ANULAR: 'ANULAR',
         PAGAR: 'PAGAR'
     },
-    
+
     // Estado Labels (for display)
     ESTADO_LABELS: {
         'RUTA_1': 'En Gestión',
@@ -93,7 +96,7 @@ export const CONSTANTS = {
         'FINALIZADA': 'Finalizada/Pagada',
         'ANULADA': 'Anulada'
     },
-    
+
     // Role Labels (for display)
     ROLE_LABELS: {
         'SUPER_ADMIN': 'Super Administrador',
@@ -107,7 +110,7 @@ export const CONSTANTS = {
         'RUTA_3': 'Contabilidad',
         'RUTA_4': 'Tesorería'
     },
-    
+
     // Accion Labels (for display)
     ACCION_LABELS: {
         'CARGAR': 'Cargada',
@@ -117,7 +120,7 @@ export const CONSTANTS = {
         'ANULAR': 'Anulada',
         'PAGAR': 'Pagada'
     },
-    
+
     // Estado Colors (for badges)
     ESTADO_COLORS: {
         'RUTA_1': 'gray',

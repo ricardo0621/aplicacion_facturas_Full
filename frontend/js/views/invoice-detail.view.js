@@ -4,12 +4,13 @@
  */
 
 import { getInvoiceById, approveInvoice, rejectInvoice, markAsPaid, annulInvoice, addInvoiceDocument } from '../services/invoice.service.js';
+import { getDocumentTypes } from '../services/document-type.service.js';
 import { formatCurrency, formatDate, formatDateTime, getEstadoLabel, getEstadoBadgeColor, getRoleLabel, getAccionLabel } from '../utils/formatters.js';
 import { showToast, showSuccess, showError } from '../components/toast.js';
 import { showModal, showConfirm, hideModal } from '../components/modal.js';
 import { navigateTo } from '../utils/router.js';
 import { getCurrentUser, hasRole, hasAnyRole } from '../utils/auth.js';
-import { CONSTANTS } from '../config/config.js';
+import { CONSTANTS, API_BASE_URL } from '../config/config.js';
 
 let currentInvoice = null;
 
@@ -293,6 +294,9 @@ function renderActions(invoice, user) {
             <button class="btn btn-danger" id="btnRechazar" style="width: 100%; margin-bottom: 0.5rem;">
                 ✕ Rechazar
             </button>
+            <button class="btn btn-warning" id="btnAgregarSoporteTesoreria" style="width: 100%; margin-bottom: 0.5rem;">
+                📎 Agregar Soporte
+            </button>
         `);
     }
 
@@ -330,6 +334,9 @@ function attachActionListeners() {
 
     // Add Support (RUTA_3)
     document.getElementById('btnCorregirSimple')?.addEventListener('click', handleAddSupport);
+
+    // Add Support (RUTA_4)
+    document.getElementById('btnAgregarSoporteTesoreria')?.addEventListener('click', handleAddSupport);
 }
 
 /**
@@ -338,16 +345,31 @@ function attachActionListeners() {
 async function handleApprove() {
     const user = getCurrentUser();
 
-    // RUTA_3 validation: Check if support document exists
+    // RUTA_3 validation: Check if SOPORTE_CONTABILIDAD exists
     if (hasRole(CONSTANTS.ROLES.RUTA_3)) {
         const hasSupportDoc = currentInvoice.documentos?.some(doc =>
-            doc.tipo_documento === 'SOPORTE' || doc.tipo_documento === 'SOPORTE_INICIAL'
+            doc.tipo_documento === 'SOPORTE_CONTABILIDAD'
         );
 
         if (!hasSupportDoc) {
             showError(
                 'Documento Requerido',
-                'Debe agregar al menos un documento de soporte antes de aprobar. Use el botón "📎 Agregar Soporte".'
+                'Debe agregar el documento de soporte de Contabilidad antes de aprobar. Use el botón "📎 Agregar Soporte".'
+            );
+            return;
+        }
+    }
+
+    // RUTA_4 validation: Check if SOPORTE_TESORERIA exists
+    if (hasRole(CONSTANTS.ROLES.RUTA_4)) {
+        const hasSupportDoc = currentInvoice.documentos?.some(doc =>
+            doc.tipo_documento === 'SOPORTE_TESORERIA'
+        );
+
+        if (!hasSupportDoc) {
+            showError(
+                'Documento Requerido',
+                'Debe agregar el documento de soporte de Tesorería antes de aprobar. Use el botón "📎 Agregar Soporte".'
             );
             return;
         }
@@ -464,22 +486,58 @@ function handleReject() {
  * Handle pay action
  */
 async function handlePay() {
-    showConfirm(
-        'Marcar como Pagada',
-        '¿Está seguro que desea marcar esta factura como pagada?',
-        async () => {
-            try {
-                await markAsPaid(currentInvoice.factura_id);
-                showSuccess('Éxito', 'Factura marcada como pagada');
-                // Reload invoice
-                const updated = await getInvoiceById(currentInvoice.factura_id);
-                currentInvoice = updated;
-                renderInvoiceDetail(document.getElementById('viewContainer'));
-            } catch (error) {
-                showError('Error', error.message || 'No se pudo marcar la factura como pagada');
+    const content = document.createElement('div');
+    content.innerHTML = `
+        <p style="margin-bottom: 1rem; color: var(--gray-300);">
+            ¿Está seguro que desea marcar esta factura como pagada?
+        </p>
+        <div class="form-group">
+            <label class="form-label">Observación *</label>
+            <textarea 
+                class="form-textarea" 
+                id="payObservation" 
+                placeholder="Ingrese una observación (obligatorio)..."
+                rows="3"
+                required
+            ></textarea>
+        </div>
+    `;
+
+    showModal({
+        title: 'Marcar como Pagada',
+        content,
+        buttons: [
+            {
+                text: 'Cancelar',
+                class: 'btn-secondary'
+            },
+            {
+                text: 'Marcar como Pagada',
+                class: 'btn-success',
+                onClick: async () => {
+                    const observacion = document.getElementById('payObservation').value.trim();
+
+                    if (!observacion) {
+                        showError('Error', 'Debe ingresar una observación');
+                        return;
+                    }
+
+                    try {
+                        await markAsPaid(currentInvoice.factura_id, observacion);
+                        showSuccess('Éxito', 'Factura marcada como pagada');
+                        hideModal();
+                        // Reload invoice
+                        const updated = await getInvoiceById(currentInvoice.factura_id);
+                        currentInvoice = updated;
+                        renderInvoiceDetail(document.getElementById('viewContainer'));
+                    } catch (error) {
+                        showError('Error', error.message || 'No se pudo marcar la factura como pagada');
+                    }
+                },
+                closeOnClick: false
             }
-        }
-    );
+        ]
+    });
 }
 
 /**
@@ -534,13 +592,39 @@ function handleAnnul() {
         ]
     });
 }
-
 /**
- * Handle add support document (RUTA_3)
+ * Handle add support document (RUTA_3 and RUTA_4)
  */
-function handleAddSupport() {
+async function handleAddSupport() {
+    const user = getCurrentUser();
+
+    // Determinar tipo de documento según el rol
+    let tipoDocumento = '';
+    let tituloModal = '';
+
+    if (hasRole(CONSTANTS.ROLES.RUTA_3)) {
+        tipoDocumento = 'SOPORTE_CONTABILIDAD';
+        tituloModal = 'Agregar Documento de Soporte - Contabilidad';
+    } else if (hasRole(CONSTANTS.ROLES.RUTA_4)) {
+        tipoDocumento = 'SOPORTE_TESORERIA';
+        tituloModal = 'Agregar Documento de Soporte - Tesorería';
+    } else {
+        showError('Error', 'No tiene permisos para agregar documentos de soporte');
+        return;
+    }
+
     const content = document.createElement('div');
     content.innerHTML = `
+        <div class="form-group">
+            <label class="form-label">Tipo de Documento</label>
+            <input 
+                type="text" 
+                class="form-input" 
+                value="${tipoDocumento === 'SOPORTE_CONTABILIDAD' ? 'Doc soporte Contabilidad' : 'Doc soporte Tesoreria'}"
+                disabled
+                style="background-color: rgba(255,255,255,0.05); cursor: not-allowed;"
+            />
+        </div>
         <div class="form-group">
             <label class="form-label">Documento de Soporte *</label>
             <input 
@@ -567,7 +651,7 @@ function handleAddSupport() {
     `;
 
     showModal({
-        title: 'Agregar Documento de Soporte',
+        title: tituloModal,
         content,
         buttons: [
             {
@@ -602,7 +686,7 @@ function handleAddSupport() {
                     try {
                         const formData = new FormData();
                         formData.append('documento', file);
-                        formData.append('tipo_documento', 'SOPORTE');
+                        formData.append('tipo_documento', tipoDocumento);
                         formData.append('observacion', observacion);
 
                         await addInvoiceDocument(currentInvoice.factura_id, formData);
