@@ -190,6 +190,24 @@ INSERT INTO tipos_soporte (codigo, nombre, descripcion, orden) VALUES
 ('CERTIFICACION', 'Certificación', 'Certificación o documento de cumplimiento', 8);
 
 -- ============================================
+-- MIGRACIONES ADICIONALES
+-- ============================================
+
+-- Tipos de soporte específicos para RUTA_3 y RUTA_4
+INSERT INTO tipos_soporte (codigo, nombre, descripcion, orden, activo) VALUES
+('SOPORTE_CONTABILIDAD', 'Doc soporte Contabilidad', 'Documento de soporte subido por Contabilidad', 9, true),
+('SOPORTE_TESORERIA', 'Doc soporte Tesoreria', 'Documento de soporte subido por Tesorería', 10, true)
+ON CONFLICT (codigo) DO NOTHING;
+
+-- Permisos de usuario
+ALTER TABLE usuarios 
+ADD COLUMN IF NOT EXISTS requiere_soporte_pago BOOLEAN DEFAULT false,
+ADD COLUMN IF NOT EXISTS puede_buscar_facturas BOOLEAN DEFAULT false;
+
+COMMENT ON COLUMN usuarios.requiere_soporte_pago IS 'Si es true, usuario RUTA_4 debe subir soporte antes de marcar como pagada';
+COMMENT ON COLUMN usuarios.puede_buscar_facturas IS 'Si es true, usuario puede acceder a búsqueda avanzada de facturas';
+
+-- ============================================
 -- USUARIO ADMINISTRADOR INICIAL
 -- Contraseña: admin123 (debe cambiarse en producción)
 -- ============================================
@@ -201,6 +219,16 @@ INSERT INTO usuario_roles (usuario_id, rol_id)
 SELECT u.usuario_id, r.rol_id 
 FROM usuarios u, roles r 
 WHERE u.email = 'admin@clinica.com' AND r.codigo = 'SUPER_ADMIN';
+
+-- Dar permiso de búsqueda a SUPER_ADMIN
+UPDATE usuarios 
+SET puede_buscar_facturas = true
+WHERE usuario_id IN (
+    SELECT ur.usuario_id 
+    FROM usuario_roles ur
+    JOIN roles r ON ur.rol_id = r.rol_id
+    WHERE r.codigo = 'SUPER_ADMIN'
+);
 
 -- ============================================
 -- NOTAS DE IMPLEMENTACIÓN

@@ -56,12 +56,12 @@ export async function correctInvoiceData(id, data) {
 
 /**
  * Delete invoice document
- * @param {number} facturaId - Invoice ID
+ * @param {number} facturaId - Invoice ID (not used but kept for compatibility)
  * @param {number} documentoId - Document ID
  * @returns {Promise<Object>} Response
  */
 export async function deleteInvoiceDocument(facturaId, documentoId) {
-    return del(`/facturas/${facturaId}/documentos/${documentoId}/correccion`);
+    return del(`/facturas/documentos/${documentoId}`);
 }
 
 /**

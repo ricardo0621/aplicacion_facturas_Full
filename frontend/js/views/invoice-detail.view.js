@@ -176,22 +176,56 @@ function renderDocuments(documentos) {
         return '<p style="color: var(--gray-400); text-align: center; padding: 2rem;">No hay documentos adjuntos</p>';
     }
 
+    const user = getCurrentUser();
+    const estadoActual = currentInvoice.estado_codigo;
+
     return `
         <div class="grid grid-cols-2 gap-md">
-            ${documentos.map(doc => `
-                <div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: var(--radius-md); padding: 1rem;">
-                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
-                        <span style="font-size: 1.5rem;">📄</span>
-                        <strong style="color: var(--gray-200);">${doc.tipo_documento}</strong>
+            ${documentos.map(doc => {
+        // Determinar si se puede eliminar el documento
+        let canDelete = false;
+
+        // SUPER_ADMIN puede eliminar cualquier documento excepto SOPORTE_INICIAL
+        if (hasRole(CONSTANTS.ROLES.SUPER_ADMIN) && doc.tipo_documento !== 'SOPORTE_INICIAL') {
+            canDelete = true;
+        }
+
+        // RUTA_3 puede eliminar SOPORTE_CONTABILIDAD solo cuando está en RUTA_3
+        if (hasRole(CONSTANTS.ROLES.RUTA_3) &&
+            doc.tipo_documento === 'SOPORTE_CONTABILIDAD' &&
+            estadoActual === CONSTANTS.ESTADOS.RUTA_3) {
+            canDelete = true;
+        }
+
+        // RUTA_4 puede eliminar SOPORTE_TESORERIA solo cuando está en RUTA_4
+        if (hasRole(CONSTANTS.ROLES.RUTA_4) &&
+            doc.tipo_documento === 'SOPORTE_TESORERIA' &&
+            estadoActual === CONSTANTS.ESTADOS.RUTA_4) {
+            canDelete = true;
+        }
+
+        return `
+                    <div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: var(--radius-md); padding: 1rem;">
+                        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                            <span style="font-size: 1.5rem;">📄</span>
+                            <strong style="color: var(--gray-200);">${doc.tipo_documento}</strong>
+                        </div>
+                        <p style="font-size: 0.875rem; color: var(--gray-400); margin-bottom: 0.5rem;">
+                            ${doc.nombre_personalizado || doc.nombre_archivo}
+                        </p>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button class="btn btn-sm btn-secondary" onclick="window.downloadDocument('${doc.ruta_archivo}', '${doc.nombre_archivo}')">
+                                ⬇ Descargar
+                            </button>
+                            ${canDelete ? `
+                                <button class="btn btn-sm btn-danger" onclick="window.deleteDocument(${doc.documento_id})">
+                                    🗑️ Eliminar
+                                </button>
+                            ` : ''}
+                        </div>
                     </div>
-                    <p style="font-size: 0.875rem; color: var(--gray-400); margin-bottom: 0.5rem;">
-                        ${doc.nombre_personalizado || doc.nombre_archivo}
-                    </p>
-                    <button class="btn btn-sm btn-secondary" onclick="window.downloadDocument('${doc.ruta_archivo}', '${doc.nombre_archivo}')">
-                        ⬇ Descargar
-                    </button>
-                </div>
-            `).join('')}
+                `;
+    }).join('')}
         </div>
     `;
 }
@@ -638,16 +672,6 @@ async function handleAddSupport() {
                 Formatos permitidos: PDF, JPG, PNG (Máx. 10MB)
             </small>
         </div>
-        <div class="form-group">
-            <label class="form-label">Observación *</label>
-            <textarea 
-                class="form-textarea" 
-                id="supportObservation" 
-                placeholder="Ingrese una observación sobre el documento..."
-                rows="3"
-                required
-            ></textarea>
-        </div>
     `;
 
     showModal({
@@ -663,15 +687,9 @@ async function handleAddSupport() {
                 class: 'btn-primary',
                 onClick: async () => {
                     const fileInput = document.getElementById('supportFile');
-                    const observacion = document.getElementById('supportObservation').value.trim();
 
                     if (!fileInput.files || fileInput.files.length === 0) {
                         showError('Error', 'Debe seleccionar un archivo');
-                        return;
-                    }
-
-                    if (!observacion) {
-                        showError('Error', 'Debe ingresar una observación');
                         return;
                     }
 
@@ -687,7 +705,6 @@ async function handleAddSupport() {
                         const formData = new FormData();
                         formData.append('documento', file);
                         formData.append('tipo_documento', tipoDocumento);
-                        formData.append('observacion', observacion);
 
                         await addInvoiceDocument(currentInvoice.factura_id, formData);
                         showSuccess('Éxito', 'Documento de soporte agregado correctamente');
@@ -711,4 +728,26 @@ async function handleAddSupport() {
 window.downloadDocument = function (path, filename) {
     // TODO: Implement document download
     showToast('Info', 'Descarga de documentos en desarrollo', 'info');
+};
+
+// Global function for deleting documents
+window.deleteDocument = async function (documentoId) {
+    showConfirm(
+        'Eliminar Documento',
+        '¿Está seguro que desea eliminar este documento?',
+        async () => {
+            try {
+                const { deleteInvoiceDocument } = await import('../services/invoice.service.js');
+                await deleteInvoiceDocument(currentInvoice.factura_id, documentoId);
+                showSuccess('Éxito', 'Documento eliminado correctamente');
+
+                // Reload invoice
+                const updated = await getInvoiceById(currentInvoice.factura_id);
+                currentInvoice = updated;
+                renderInvoiceDetail(document.getElementById('viewContainer'));
+            } catch (error) {
+                showError('Error', error.message || 'No se pudo eliminar el documento');
+            }
+        }
+    );
 };
