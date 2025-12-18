@@ -48,17 +48,28 @@ const isSuperAdmin = (req, res, next) => {
  */
 const verificarPermisoBusqueda = async (req, res, next) => {
     try {
+        // SUPER_ADMIN siempre tiene acceso
+        if (req.user.is_admin || (req.user.roles && req.user.roles.includes('SUPER_ADMIN'))) {
+            return next();
+        }
+
+        // Verificar si el permiso está en el token (más eficiente)
+        if (req.user.puede_buscar_facturas === true) {
+            return next();
+        }
+
+        // Si no está en el token, consultar la base de datos (por si el token es antiguo)
         const db = require('../config/db');
         const client = await db.connect();
 
         try {
             const query = 'SELECT puede_buscar_facturas FROM usuarios WHERE usuario_id = $1';
-            const result = await client.query(query, [req.user.userId]);
+            const result = await client.query(query, [req.user.usuario_id]);
 
             if (result.rows.length === 0 || !result.rows[0].puede_buscar_facturas) {
                 return res.status(403).json({
                     error: 'Acceso denegado',
-                    details: 'No tiene permisos para acceder a la búsqueda de facturas.'
+                    details: 'No tiene permisos para acceder a la búsqueda de facturas. Cierre sesión y vuelva a iniciar sesión si recientemente se le asignó este permiso.'
                 });
             }
 

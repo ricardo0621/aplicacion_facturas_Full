@@ -825,17 +825,28 @@ const obtenerEstadisticas = async () => {
 const busquedaAvanzada = async (filtros, userId) => {
     const client = await db.connect();
     try {
-        // Verificar que el usuario tenga permiso de búsqueda
-        const rolesRes = await client.query(`
-            SELECT r.codigo FROM usuario_roles ur
-            JOIN roles r ON ur.rol_id = r.rol_id
-            WHERE ur.usuario_id = $1
+        // Verificar permisos de búsqueda
+        const permisosRes = await client.query(`
+            SELECT 
+                u.puede_buscar_facturas,
+                EXISTS(
+                    SELECT 1 FROM usuario_roles ur
+                    JOIN roles r ON ur.rol_id = r.rol_id
+                    WHERE ur.usuario_id = $1 AND r.codigo = 'SUPER_ADMIN'
+                ) as is_super_admin
+            FROM usuarios u
+            WHERE u.usuario_id = $1
         `, [userId]);
 
-        const roles = rolesRes.rows.map(r => r.codigo);
 
-        // Solo SUPER_ADMIN y BUSQUEDA_FACTURAS pueden usar búsqueda avanzada
-        if (!roles.includes('SUPER_ADMIN') && !roles.includes('BUSQUEDA_FACTURAS')) {
+        if (permisosRes.rows.length === 0) {
+            throw new Error('Usuario no encontrado');
+        }
+
+        const { puede_buscar_facturas, is_super_admin } = permisosRes.rows[0];
+
+        // SUPER_ADMIN o usuarios con permiso pueden buscar
+        if (!is_super_admin && !puede_buscar_facturas) {
             throw new Error('No tienes permisos para realizar búsquedas avanzadas');
         }
 
@@ -876,10 +887,17 @@ const busquedaAvanzada = async (filtros, userId) => {
             pCount++;
         }
 
-        // Filtro por nombre del proveedor
+        // Filtro por proveedor (nombre)
         if (filtros.proveedor) {
             query += ` AND p.nombre ILIKE $${pCount}`;
             params.push(`%${filtros.proveedor}%`);
+            pCount++;
+        }
+
+        // Filtro por proveedor_id
+        if (filtros.proveedor_id) {
+            query += ` AND f.proveedor_id = $${pCount}`;
+            params.push(filtros.proveedor_id);
             pCount++;
         }
 
@@ -897,6 +915,20 @@ const busquedaAvanzada = async (filtros, userId) => {
             pCount++;
         }
 
+        // Filtro por monto desde
+        if (filtros.monto_desde) {
+            query += ` AND f.monto >= $${pCount}`;
+            params.push(parseFloat(filtros.monto_desde));
+            pCount++;
+        }
+
+        // Filtro por monto hasta
+        if (filtros.monto_hasta) {
+            query += ` AND f.monto <= $${pCount}`;
+            params.push(parseFloat(filtros.monto_hasta));
+            pCount++;
+        }
+
         // Filtro por monto mayor a 2 millones
         if (filtros.monto_mayor_2m === 'true' || filtros.monto_mayor_2m === true) {
             query += ` AND f.monto > 2000000`;
@@ -906,6 +938,20 @@ const busquedaAvanzada = async (filtros, userId) => {
         if (filtros.estado) {
             query += ` AND e.codigo = $${pCount}`;
             params.push(filtros.estado);
+            pCount++;
+        }
+
+        // Filtro por dirección que aprobó
+        if (filtros.direccion_aprobo) {
+            query += ` AND EXISTS (
+                SELECT 1 FROM factura_historial fh
+                JOIN usuario_roles ur ON fh.usuario_id = ur.usuario_id
+                JOIN roles r ON ur.rol_id = r.rol_id
+                WHERE fh.factura_id = f.factura_id 
+                AND fh.accion = 'APROBAR'
+                AND r.codigo = $${pCount}
+            )`;
+            params.push(filtros.direccion_aprobo);
             pCount++;
         }
 

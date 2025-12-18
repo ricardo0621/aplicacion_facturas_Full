@@ -49,16 +49,16 @@ export async function renderAdvancedSearchView(container) {
                             <label class="form-label">Estado</label>
                             <select class="form-select" id="estado">
                                 <option value="">Todos los estados</option>
-                                <option value="PENDIENTE">Devuelta (En Gestión)</option>
-                                <option value="EN_REVISION_RUTA_2_DIR_ADM">Dirección Administrativa</option>
-                                <option value="EN_REVISION_RUTA_2_DIR_FIN">Dirección Financiera</option>
-                                <option value="EN_REVISION_RUTA_2_DIR_MED">Dirección Médica</option>
-                                <option value="EN_REVISION_RUTA_2_DIR_GEN">Dirección General</option>
-                                <option value="EN_REVISION_RUTA_2_CTRL_INT">Control Interno</option>
-                                <option value="EN_REVISION_RUTA_3">Contabilidad</option>
-                                <option value="EN_TESORERIA">Tesorería</option>
-                                <option value="ANULADO">Anulada</option>
-                                <option value="PAGADO">Pagada</option>
+                                <option value="RUTA_1">Devuelta (En Gestión)</option>
+                                <option value="RUTA_2_DIRECCION_ADMINISTRATIVA">Dirección Administrativa</option>
+                                <option value="RUTA_2_DIRECCION_FINANCIERA">Dirección Financiera</option>
+                                <option value="RUTA_2_DIRECCION_MEDICA">Dirección Médica</option>
+                                <option value="RUTA_2_DIRECCION_GENERAL">Dirección General</option>
+                                <option value="RUTA_2_CONTROL_INTERNO">Control Interno</option>
+                                <option value="RUTA_3">Contabilidad</option>
+                                <option value="RUTA_4">Tesorería</option>
+                                <option value="ANULADA">Anulada</option>
+                                <option value="FINALIZADA">Pagada</option>
                             </select>
                         </div>
 
@@ -132,7 +132,6 @@ export async function renderAdvancedSearchView(container) {
                                 <th>Fecha</th>
                                 <th>Monto</th>
                                 <th>Estado</th>
-                                <th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody id="resultsTableBody">
@@ -200,16 +199,11 @@ async function handleSearch(e) {
         if (!filters[key]) delete filters[key];
     });
 
-    // Check if at least one filter is provided
-    if (Object.keys(filters).length === 0) {
-        showError('Error', 'Debe especificar al menos un filtro de búsqueda');
-        return;
-    }
-
     try {
-        // Build query string
+        // Build query string (can be empty to fetch all)
         const queryString = new URLSearchParams(filters).toString();
-        const response = await get(`/facturas?${queryString}`);
+        const endpoint = queryString ? `/facturas/busqueda-avanzada?${queryString}` : '/facturas/busqueda-avanzada';
+        const response = await get(endpoint);
 
         searchResults = response.facturas || response || [];
         renderResults();
@@ -244,7 +238,7 @@ function renderResults() {
     if (searchResults.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="6" class="text-center" style="color: var(--gray-400);">
+                <td colspan="5" class="text-center" style="color: var(--gray-400);">
                     No se encontraron resultados
                 </td>
             </tr>
@@ -253,24 +247,19 @@ function renderResults() {
     }
 
     tbody.innerHTML = searchResults.map(factura => {
-        const badgeColor = getEstadoBadgeColor(factura.estado);
-        const estadoLabel = CONSTANTS.ESTADO_LABELS[factura.estado] || factura.estado;
+        const badgeColor = getEstadoBadgeColor(factura.estado_codigo);
+        const estadoLabel = CONSTANTS.ESTADO_LABELS[factura.estado_codigo] || factura.estado_nombre || 'Sin estado';
 
         return `
             <tr>
                 <td><strong>${factura.numero_factura}</strong></td>
                 <td>${factura.proveedor_nombre || '-'}</td>
-                <td>${formatDate(factura.fecha_factura)}</td>
-                <td><strong>${formatCurrency(factura.monto_total)}</strong></td>
+                <td>${formatDate(factura.fecha_emision || factura.fecha_creacion)}</td>
+                <td><strong>${formatCurrency(factura.monto)}</strong></td>
                 <td>
                     <span class="badge badge-${badgeColor}">
                         ${estadoLabel}
                     </span>
-                </td>
-                <td>
-                    <button class="btn btn-sm btn-primary" onclick="window.viewInvoiceDetail(${factura.factura_id})">
-                        👁️ Ver Detalle
-                    </button>
                 </td>
             </tr>
         `;
@@ -294,7 +283,7 @@ function clearFilters() {
     if (tbody) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="6" class="text-center" style="color: var(--gray-400);">
+                <td colspan="5" class="text-center" style="color: var(--gray-400);">
                     Utiliza los filtros para buscar facturas
                 </td>
             </tr>
