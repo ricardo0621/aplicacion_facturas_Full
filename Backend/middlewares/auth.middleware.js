@@ -43,7 +43,40 @@ const isSuperAdmin = (req, res, next) => {
     next();
 };
 
+/**
+ * Middleware para verificar si el usuario tiene permiso de búsqueda
+ */
+const verificarPermisoBusqueda = async (req, res, next) => {
+    try {
+        const db = require('../config/db');
+        const client = await db.connect();
+
+        try {
+            const query = 'SELECT puede_buscar_facturas FROM usuarios WHERE usuario_id = $1';
+            const result = await client.query(query, [req.user.userId]);
+
+            if (result.rows.length === 0 || !result.rows[0].puede_buscar_facturas) {
+                return res.status(403).json({
+                    error: 'Acceso denegado',
+                    details: 'No tiene permisos para acceder a la búsqueda de facturas.'
+                });
+            }
+
+            next();
+        } finally {
+            client.release();
+        }
+    } catch (error) {
+        console.error('Error al verificar permiso de búsqueda:', error);
+        return res.status(500).json({
+            error: 'Error al verificar permisos',
+            details: error.message
+        });
+    }
+};
+
 module.exports = {
     verifyToken,
-    isSuperAdmin
+    isSuperAdmin,
+    verificarPermisoBusqueda
 };

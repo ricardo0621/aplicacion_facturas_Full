@@ -354,6 +354,60 @@ const listarUsuariosRuta2 = async (req, res) => {
     }
 };
 
+/**
+ * Asignar roles y permisos a un usuario (solo SUPER_ADMIN)
+ */
+const asignarRolesYPermisos = async (req, res) => {
+    try {
+        // Verificar que el usuario actual es SUPER_ADMIN
+        if (!req.user.roles || !req.user.roles.includes('SUPER_ADMIN')) {
+            return res.status(403).json({
+                error: 'Acceso denegado',
+                details: 'Solo los Super Administradores pueden asignar roles y permisos.'
+            });
+        }
+
+        const { id } = req.params;
+        const { roles, permisos } = req.body;
+
+        await usuarioService.asignarRolesYPermisos(id, roles, permisos);
+
+        res.json({
+            success: true,
+            message: 'Roles y permisos asignados exitosamente'
+        });
+
+    } catch (error) {
+        console.error('Error al asignar roles y permisos:', error);
+        res.status(500).json({
+            error: 'Error al asignar roles y permisos',
+            details: error.message
+        });
+    }
+};
+
+/**
+ * Obtener roles y permisos de un usuario
+ */
+const obtenerRolesYPermisos = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const permisos = await usuarioService.obtenerPermisosUsuario(id);
+
+        res.json({
+            success: true,
+            permisos
+        });
+
+    } catch (error) {
+        console.error('Error al obtener roles y permisos:', error);
+        res.status(404).json({
+            error: 'Error al obtener roles y permisos',
+            details: error.message
+        });
+    }
+};
+
 module.exports = {
     crearUsuario,
     listarUsuarios,
@@ -363,5 +417,7 @@ module.exports = {
     activarUsuario,
     asignarRoles,
     listarRoles,
-    listarUsuariosRuta2
+    listarUsuariosRuta2,
+    asignarRolesYPermisos,
+    obtenerRolesYPermisos
 };

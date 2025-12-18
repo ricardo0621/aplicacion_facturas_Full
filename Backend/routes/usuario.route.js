@@ -17,4 +17,8 @@ router.delete('/:id', usuarioController.desactivarUsuario);
 router.patch('/:id/activar', usuarioController.activarUsuario);
 router.put('/:id/roles', usuarioController.asignarRoles);
 
+// Nuevas rutas para roles y permisos
+router.post('/:id/roles-permisos', usuarioController.asignarRolesYPermisos);
+router.get('/:id/roles-permisos', usuarioController.obtenerRolesYPermisos);
+
 module.exports = router;

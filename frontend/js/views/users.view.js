@@ -123,6 +123,9 @@ function renderUsersTable() {
                 </span>
             </td>
             <td>
+                <button class="btn btn-sm btn-warning" onclick="window.assignRoles(${user.usuario_id})" style="margin-right: 0.25rem;">
+                    🔑 Asignar Rol
+                </button>
                 <button class="btn btn-sm btn-secondary" onclick="window.editUser(${user.usuario_id})" style="margin-right: 0.25rem;">
                     ✏️ Editar
                 </button>
@@ -138,9 +141,6 @@ function renderUsersTable() {
  * Show create user modal
  */
 async function showCreateUserModal() {
-    const response = await get('/usuarios/roles');
-    const roles = response.roles || response;
-
     const content = document.createElement('div');
     content.innerHTML = `
         <form id="userForm">
@@ -177,17 +177,11 @@ async function showCreateUserModal() {
                     <label class="form-label">Cargo</label>
                     <input type="text" class="form-input" id="cargo">
                 </div>
-                <div class="form-group" style="grid-column: span 2;">
-                    <label class="form-label">Roles *</label>
-                    <div id="rolesContainer" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem;">
-                        ${roles.map(role => `
-                            <label style="display: flex; align-items: center; gap: 0.5rem;">
-                                <input type="checkbox" name="roles" value="${role.rol_id}">
-                                <span>${role.nombre}</span>
-                            </label>
-                        `).join('')}
-                    </div>
-                </div>
+            </div>
+            <div style="margin-top: 1rem; padding: 1rem; background: rgba(255, 193, 7, 0.1); border-left: 3px solid var(--warning-400); border-radius: 4px;">
+                <p style="margin: 0; color: var(--warning-400); font-size: 0.875rem;">
+                    ℹ️ El usuario se creará sin roles asignados. Use el botón "🔑 Asignar Rol" después de crear el usuario para configurar sus roles y permisos.
+                </p>
             </div>
         </form>
     `;
@@ -210,14 +204,6 @@ async function showCreateUserModal() {
                         return;
                     }
 
-                    const selectedRoles = Array.from(document.querySelectorAll('input[name="roles"]:checked'))
-                        .map(cb => parseInt(cb.value));
-
-                    if (selectedRoles.length === 0) {
-                        showError('Error', 'Debe seleccionar al menos un rol');
-                        return;
-                    }
-
                     const userData = {
                         nombre: document.getElementById('nombre').value,
                         email: document.getElementById('email').value,
@@ -225,13 +211,12 @@ async function showCreateUserModal() {
                         tipo_documento: document.getElementById('tipo_documento').value,
                         numero_documento: document.getElementById('numero_documento').value,
                         area: document.getElementById('area').value,
-                        cargo: document.getElementById('cargo').value,
-                        roles: selectedRoles
+                        cargo: document.getElementById('cargo').value
                     };
 
                     try {
                         await post('/usuarios', userData);
-                        showSuccess('Éxito', 'Usuario creado correctamente');
+                        showSuccess('Éxito', 'Usuario creado correctamente. Ahora puede asignar roles y permisos.');
                         hideModal();
                         await loadUsers();
                     } catch (error) {
@@ -395,4 +380,113 @@ window.deleteUser = function (id) {
             }
         }
     );
+};
+
+/**
+ * Show assign roles and permissions modal
+ */
+window.assignRoles = async function (id) {
+    try {
+        const user = currentUsers.find(u => u.usuario_id === id);
+        if (!user) {
+            showError('Error', 'Usuario no encontrado');
+            return;
+        }
+
+        // Get available roles
+        const rolesResponse = await get('/usuarios/roles');
+        const roles = rolesResponse.roles || rolesResponse;
+
+        // Get current user roles and permissions
+        const permisosResponse = await get(`/usuarios/${id}/roles-permisos`);
+        const permisos = permisosResponse.permisos || {};
+        const currentRoles = permisos.roles || [];
+
+        const content = document.createElement('div');
+        content.innerHTML = `
+            <form id="rolesPermisosForm">
+                <div class="form-group">
+                    <label class="form-label">Roles *</label>
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem;">
+                        ${roles.map(role => `
+                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                <input 
+                                    type="checkbox" 
+                                    name="roles" 
+                                    value="${role.codigo}"
+                                    ${currentRoles.includes(role.codigo) ? 'checked' : ''}
+                                />
+                                <span>${role.nombre}</span>
+                            </label>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <hr style="margin: 1.5rem 0; border-color: rgba(255,255,255,0.1);">
+
+                <div class="form-group">
+                    <label class="form-label">Permisos Especiales</label>
+                    
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; margin-bottom: 0.75rem;">
+                        <input 
+                            type="checkbox" 
+                            id="requiere_soporte_pago"
+                            ${permisos.requiere_soporte_pago ? 'checked' : ''}
+                        />
+                        <span>Requiere documento de soporte para marcar como pagada (RUTA_4)</span>
+                    </label>
+
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                        <input 
+                            type="checkbox" 
+                            id="puede_buscar_facturas"
+                            ${permisos.puede_buscar_facturas ? 'checked' : ''}
+                        />
+                        <span>Puede acceder a búsqueda avanzada de facturas</span>
+                    </label>
+                </div>
+            </form>
+        `;
+
+        showModal({
+            title: `🔑 Asignar Rol y Permisos - ${user.nombre}`,
+            content,
+            buttons: [
+                {
+                    text: 'Cancelar',
+                    class: 'btn-secondary'
+                },
+                {
+                    text: 'Guardar Roles y Permisos',
+                    class: 'btn-primary',
+                    onClick: async () => {
+                        const selectedRoles = Array.from(document.querySelectorAll('input[name="roles"]:checked'))
+                            .map(cb => cb.value);
+
+                        const permisosData = {
+                            roles: selectedRoles,
+                            permisos: {
+                                requiere_soporte_pago: document.getElementById('requiere_soporte_pago').checked,
+                                puede_buscar_facturas: document.getElementById('puede_buscar_facturas').checked
+                            }
+                        };
+
+                        try {
+                            await post(`/usuarios/${id}/roles-permisos`, permisosData);
+                            showSuccess('Éxito', 'Roles y permisos asignados correctamente');
+                            hideModal();
+                            await loadUsers();
+                        } catch (error) {
+                            showError('Error', error.message || 'No se pudieron asignar los roles y permisos');
+                        }
+                    },
+                    closeOnClick: false
+                }
+            ]
+        });
+
+    } catch (error) {
+        console.error('Error loading roles and permissions:', error);
+        showError('Error', error.message || 'No se pudieron cargar los roles y permisos');
+    }
 };

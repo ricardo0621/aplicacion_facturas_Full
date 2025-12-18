@@ -297,6 +297,84 @@ const listarRoles = async () => {
     }
 };
 
+/**
+ * Asignar roles y permisos a un usuario
+ */
+const asignarRolesYPermisos = async (usuarioId, roles, permisos) => {
+    const client = await db.connect();
+    try {
+        await client.query('BEGIN');
+
+        // Eliminar roles existentes
+        await client.query('DELETE FROM usuario_roles WHERE usuario_id = $1', [usuarioId]);
+
+        // Asignar nuevos roles
+        if (roles && roles.length > 0) {
+            for (const rolCodigo of roles) {
+                const rolQuery = 'SELECT rol_id FROM roles WHERE codigo = $1';
+                const rolResult = await client.query(rolQuery, [rolCodigo]);
+
+                if (rolResult.rows.length > 0) {
+                    await client.query(
+                        'INSERT INTO usuario_roles (usuario_id, rol_id) VALUES ($1, $2)',
+                        [usuarioId, rolResult.rows[0].rol_id]
+                    );
+                }
+            }
+        }
+
+        // Actualizar permisos
+        const updateQuery = `
+            UPDATE usuarios 
+            SET requiere_soporte_pago = $1,
+                puede_buscar_facturas = $2
+            WHERE usuario_id = $3
+        `;
+        await client.query(updateQuery, [
+            permisos.requiere_soporte_pago || false,
+            permisos.puede_buscar_facturas || false,
+            usuarioId
+        ]);
+
+        await client.query('COMMIT');
+        return { mensaje: 'Roles y permisos asignados exitosamente' };
+    } catch (error) {
+        await client.query('ROLLBACK');
+        throw error;
+    } finally {
+        client.release();
+    }
+};
+
+/**
+ * Obtener roles y permisos de un usuario
+ */
+const obtenerPermisosUsuario = async (usuarioId) => {
+    const client = await db.connect();
+    try {
+        const query = `
+            SELECT 
+                u.requiere_soporte_pago,
+                u.puede_buscar_facturas,
+                ARRAY_AGG(r.codigo) FILTER (WHERE r.codigo IS NOT NULL) as roles
+            FROM usuarios u
+            LEFT JOIN usuario_roles ur ON u.usuario_id = ur.usuario_id
+            LEFT JOIN roles r ON ur.rol_id = r.rol_id
+            WHERE u.usuario_id = $1
+            GROUP BY u.usuario_id, u.requiere_soporte_pago, u.puede_buscar_facturas
+        `;
+        const result = await client.query(query, [usuarioId]);
+
+        if (result.rows.length === 0) {
+            throw new Error('Usuario no encontrado.');
+        }
+
+        return result.rows[0];
+    } finally {
+        client.release();
+    }
+};
+
 module.exports = {
     crearUsuario,
     listarUsuarios,
@@ -305,5 +383,7 @@ module.exports = {
     desactivarUsuario,
     activarUsuario,
     asignarRoles,
-    listarRoles
+    listarRoles,
+    asignarRolesYPermisos,
+    obtenerPermisosUsuario
 };

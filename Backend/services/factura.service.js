@@ -558,11 +558,26 @@ const eliminarFactura = async (facturaId, userId) => {
 const validarEvidenciaPago = async (facturaId, userId) => {
     const client = await db.connect();
     try {
-        // Requerir al menos un documento de soporte (cualquier tipo excepto FACTURA y SOPORTE_INICIAL)
+        // Consultar si el usuario requiere documento de soporte obligatorio
+        const userQuery = `
+            SELECT requiere_soporte_pago, r.codigo as rol_codigo
+            FROM usuarios u
+            LEFT JOIN usuario_roles ur ON u.usuario_id = ur.usuario_id
+            LEFT JOIN roles r ON ur.rol_id = r.rol_id
+            WHERE u.usuario_id = $1 AND r.codigo = 'RUTA_4'
+        `;
+        const userResult = await client.query(userQuery, [userId]);
+
+        // Si no es RUTA_4 o no tiene el permiso activado, no requerir documento
+        if (userResult.rows.length === 0 || !userResult.rows[0].requiere_soporte_pago) {
+            return { requerida: false, existe: true };
+        }
+
+        // Si requiere soporte, validar que exista documento SOPORTE_TESORERIA
         const evidenciaQuery = `
             SELECT documento_id FROM factura_documentos
             WHERE factura_id = $1 
-              AND tipo_documento NOT IN ('FACTURA', 'SOPORTE_INICIAL')
+              AND tipo_documento = 'SOPORTE_TESORERIA'
         `;
         const evidenciaResult = await client.query(evidenciaQuery, [facturaId]);
 
