@@ -24,7 +24,7 @@ const {
     eliminarDocumentoCorreccion,
     agregarDocumentoCorreccion
 } = require('../controller/factura.controller');
-const { verifyToken } = require('../middlewares/auth.middleware');
+const { verifyToken, verificarPermisoBusqueda } = require('../middlewares/auth.middleware');
 
 // Configuración de Multer para carga de archivos
 const UPLOAD_BASE_PATH = 'D:\\FacturasClinica';
@@ -90,7 +90,7 @@ router.get('/', verifyToken, listarFacturas);
 
 // GET /api/facturas/busqueda-avanzada - Búsqueda avanzada (requiere permiso)
 // IMPORTANTE: Esta ruta debe estar ANTES de /:id para evitar conflictos
-router.get('/busqueda-avanzada', verifyToken, busquedaAvanzada);
+router.get('/busqueda-avanzada', verifyToken, verificarPermisoBusqueda, busquedaAvanzada);
 
 // GET /api/facturas/pendientes/count - Contar facturas pendientes
 router.get('/pendientes/count', verifyToken, contarPendientes);

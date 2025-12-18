@@ -10,7 +10,8 @@ const loginUsuario = async (email, password) => {
     try {
         const query = `
             SELECT 
-                u.usuario_id, u.email, u.nombre, u.password_hash, u.activo, u.area, u.cargo
+                u.usuario_id, u.email, u.nombre, u.password_hash, u.activo, u.area, u.cargo,
+                u.puede_buscar_facturas, u.requiere_soporte_pago
             FROM usuarios u
             WHERE u.email = $1;
         `;
@@ -58,7 +59,9 @@ const loginUsuario = async (email, password) => {
             email: usuario.email,
             nombre: usuario.nombre,
             is_admin: isAdmin,
-            roles: roles.map(r => r.codigo) // Solo códigos en el token
+            roles: roles.map(r => r.codigo), // Solo códigos en el token
+            puede_buscar_facturas: usuario.puede_buscar_facturas || false,
+            requiere_soporte_pago: usuario.requiere_soporte_pago || false
         };
 
         // Generar el token
@@ -78,7 +81,9 @@ const loginUsuario = async (email, password) => {
                 area: usuario.area,
                 cargo: usuario.cargo,
                 roles: roles, // Array de objetos con codigo y nombre
-                is_admin: isAdmin
+                is_admin: isAdmin,
+                puede_buscar_facturas: usuario.puede_buscar_facturas || false,
+                requiere_soporte_pago: usuario.requiere_soporte_pago || false
             }
         };
     } catch (error) {

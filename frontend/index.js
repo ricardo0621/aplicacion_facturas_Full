@@ -43,6 +43,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (hasRole(CONSTANTS.ROLES.RUTA_1)) {
             document.querySelectorAll('.ruta1-only').forEach(el => el.classList.remove('hidden'));
         }
+
+        // Show search link only if user has permission
+        if (user.puede_buscar_facturas) {
+            document.querySelectorAll('.search-only').forEach(el => el.classList.remove('hidden'));
+        }
     }
 
     // User dropdown toggle
