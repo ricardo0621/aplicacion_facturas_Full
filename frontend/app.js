@@ -11,6 +11,7 @@ import { renderUsersView } from './js/views/users.view.js';
 import { renderProvidersView } from './js/views/providers.view.js';
 import { renderAdvancedSearchView } from './js/views/search.view.js';
 import { renderCreateInvoiceView } from './js/views/create-invoice.view.js';
+import { renderCorrectInvoiceView } from './js/views/correct-invoice.view.js';
 import { renderDocumentTypesView } from './js/views/document-types.view.js';
 
 // Wait for DOM to be ready
@@ -84,6 +85,15 @@ document.addEventListener('DOMContentLoaded', () => {
             dashboardView.classList.add('hidden');
         }
         renderCreateInvoiceView(viewContainer);
+    });
+
+    registerRoute('corregir-factura/:id', (params) => {
+        updateActiveNav('facturas');
+        const dashboardView = document.getElementById('dashboardView');
+        if (dashboardView) {
+            dashboardView.classList.add('hidden');
+        }
+        renderCorrectInvoiceView(viewContainer, params.id);
     });
 
     registerRoute('tipos-soporte', () => {

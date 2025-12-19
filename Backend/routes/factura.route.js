@@ -81,6 +81,15 @@ const uploadMultiple = multer({
     limits: { fileSize: 10 * 1024 * 1024 } // 10MB por archivo
 }).array('documentos', 10); // Máximo 10 archivos
 
+// Configurar para corrección de factura (documento principal + soportes)
+const uploadCorrection = multer({
+    storage: storage,
+    limits: { fileSize: 10 * 1024 * 1024 } // 10MB por archivo
+}).fields([
+    { name: 'documento', maxCount: 1 },  // Documento principal (opcional)
+    { name: 'soportes', maxCount: 10 }   // Documentos de soporte (opcional)
+]);
+
 // =============================================================
 // RUTAS DE FACTURAS
 // =============================================================
@@ -115,6 +124,9 @@ router.put('/:id/estado-con-documento', verifyToken, uploadSingleSoporte, proces
 
 // PUT /api/facturas/:id/corregir-datos - Corregir datos de factura (Solo Ruta 1)
 router.put('/:id/corregir-datos', verifyToken, corregirFacturaRuta1);
+
+// POST /api/facturas/:id/corregir - Corregir factura completa con archivos (Solo Ruta 1)
+router.post('/:id/corregir', verifyToken, uploadCorrection, corregirFacturaRuta1);
 
 // DELETE /api/facturas/:id - Eliminar factura (solo SUPER_ADMIN)
 router.delete('/:id', verifyToken, eliminarFactura);

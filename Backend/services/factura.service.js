@@ -1328,6 +1328,167 @@ const agregarDocumentoCorreccion = async (facturaId, archivo, nombrePersonalizad
     }
 };
 
+/**
+ * Corregir factura completa con archivos (RUTA_1)
+ */
+const corregirFacturaCompleta = async (facturaId, datosActualizados, files, documentosEliminar, soporteTipos, userId) => {
+    const client = await db.connect();
+    try {
+        await client.query('BEGIN');
+
+        // 1. Verificar que la factura existe y está en RUTA_1
+        const facturaRes = await client.query(
+            'SELECT f.*, e.codigo as estado_codigo FROM facturas f JOIN estados e ON f.estado_id = e.estado_id WHERE f.factura_id = $1',
+            [facturaId]
+        );
+
+        if (facturaRes.rows.length === 0) {
+            throw new Error('Factura no encontrada');
+        }
+
+        const factura = facturaRes.rows[0];
+
+        if (factura.estado_codigo !== 'RUTA_1') {
+            throw new Error('Solo se pueden corregir facturas en estado RUTA_1');
+        }
+
+        if (factura.usuario_creacion_id !== userId) {
+            throw new Error('Solo el creador de la factura puede corregirla');
+        }
+
+        // 2. Actualizar datos de la factura
+        await client.query(`
+            UPDATE facturas 
+            SET numero_factura = $1,
+                proveedor_id = $2,
+                monto = $3,
+                fecha_emision = $4,
+                concepto = $5,
+                fecha_actualizacion = NOW()
+            WHERE factura_id = $6
+        `, [
+            datosActualizados.numero_factura,
+            datosActualizados.proveedor_id,
+            datosActualizados.monto,
+            datosActualizados.fecha_emision,
+            datosActualizados.concepto,
+            facturaId
+        ]);
+
+        // 3. Reemplazar documento principal si se subió uno nuevo
+        if (files.documento) {
+            const fs = require('fs');
+
+            // Obtener el documento principal actual (tipo FACTURA)
+            const docActualRes = await client.query(
+                `SELECT documento_id, ruta_archivo FROM factura_documentos 
+                 WHERE factura_id = $1 AND tipo_documento = 'FACTURA' 
+                 ORDER BY fecha_subida DESC LIMIT 1`,
+                [facturaId]
+            );
+
+            // Eliminar documento anterior si existe
+            if (docActualRes.rows.length > 0) {
+                const docAnterior = docActualRes.rows[0];
+
+                // Eliminar archivo físico
+                try {
+                    if (fs.existsSync(docAnterior.ruta_archivo)) {
+                        fs.unlinkSync(docAnterior.ruta_archivo);
+                    }
+                } catch (err) {
+                    console.error('Error eliminando documento anterior:', err);
+                }
+
+                // Eliminar registro de BD
+                await client.query(
+                    'DELETE FROM factura_documentos WHERE documento_id = $1',
+                    [docAnterior.documento_id]
+                );
+            }
+
+            // Insertar nuevo documento principal
+            await client.query(`
+                INSERT INTO factura_documentos (
+                    factura_id, tipo_documento, nombre_archivo, ruta_archivo
+                ) VALUES ($1, $2, $3, $4)
+            `, [facturaId, 'FACTURA', files.documento.filename, files.documento.path]);
+
+            // Actualizar nombre del documento en la tabla facturas
+            await client.query(`
+                UPDATE facturas 
+                SET documento_nombre = $1
+                WHERE factura_id = $2
+            `, [files.documento.filename, facturaId]);
+        }
+
+        // 4. Eliminar documentos marcados para eliminación
+        if (documentosEliminar && documentosEliminar.length > 0) {
+            const fs = require('fs');
+
+            for (const docId of documentosEliminar) {
+                // Obtener ruta del documento
+                const docRes = await client.query(
+                    'SELECT ruta_archivo FROM factura_documentos WHERE documento_id = $1 AND factura_id = $2',
+                    [docId, facturaId]
+                );
+
+                if (docRes.rows.length > 0) {
+                    const rutaArchivo = docRes.rows[0].ruta_archivo;
+
+                    // Eliminar archivo físico
+                    try {
+                        if (fs.existsSync(rutaArchivo)) {
+                            fs.unlinkSync(rutaArchivo);
+                        }
+                    } catch (err) {
+                        console.error('Error eliminando archivo:', err);
+                    }
+
+                    // Eliminar registro de BD
+                    await client.query(
+                        'DELETE FROM factura_documentos WHERE documento_id = $1',
+                        [docId]
+                    );
+                }
+            }
+        }
+
+        // 5. Agregar nuevos documentos de soporte
+        if (files.soportes && files.soportes.length > 0) {
+            for (let i = 0; i < files.soportes.length; i++) {
+                const file = files.soportes[i];
+                const tipoDocumento = soporteTipos[i] ? `SOPORTE_${soporteTipos[i]}` : 'SOPORTE';
+
+                await client.query(`
+                    INSERT INTO factura_documentos (
+                        factura_id, tipo_documento, nombre_archivo, ruta_archivo
+                    ) VALUES ($1, $2, $3, $4)
+                `, [facturaId, tipoDocumento, file.filename, file.path]);
+            }
+        }
+
+        // 6. Registrar en historial
+        await client.query(`
+            INSERT INTO factura_historial (
+                factura_id, usuario_id, accion, observacion, fecha_accion
+            ) VALUES ($1, $2, $3, $4, NOW())
+        `, [facturaId, userId, 'CORREGIR', 'Factura corregida con datos y documentos actualizados']);
+
+        await client.query('COMMIT');
+
+        // Retornar factura actualizada
+        const facturaActualizada = await obtenerFacturaPorId(facturaId, userId);
+        return facturaActualizada;
+
+    } catch (error) {
+        await client.query('ROLLBACK');
+        throw error;
+    } finally {
+        client.release();
+    }
+};
+
 
 module.exports = {
     crearFactura,
@@ -1347,6 +1508,7 @@ module.exports = {
     contarFacturasPendientes,
     corregirFacturaRuta1,
     eliminarDocumentoRuta1,
-    agregarDocumentoCorreccion
+    agregarDocumentoCorreccion,
+    corregirFacturaCompleta
 };
 

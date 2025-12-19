@@ -579,9 +579,49 @@ const corregirFacturaRuta1 = async (req, res) => {
     try {
         const { id } = req.params;
         const userId = req.user.usuario_id;
-        const datosActualizados = req.body;
 
-        const resultado = await facturaService.corregirFacturaRuta1(id, datosActualizados, userId);
+        // Extract data from body
+        const datosActualizados = {
+            numero_factura: req.body.numero_factura,
+            proveedor_id: req.body.proveedor_id,
+            monto: req.body.monto,
+            fecha_emision: req.body.fecha_emision,
+            concepto: req.body.concepto
+        };
+
+        // Extract files from multer
+        const files = {
+            documento: req.files?.documento?.[0], // Main invoice document (optional)
+            soportes: req.files?.soportes || []   // Support documents (optional)
+        };
+
+        // Extract document IDs to delete
+        let documentosEliminar = [];
+        if (req.body.documentos_eliminar) {
+            try {
+                documentosEliminar = JSON.parse(req.body.documentos_eliminar);
+            } catch (e) {
+                console.error('Error parsing documentos_eliminar:', e);
+            }
+        }
+
+        // Extract support types for new documents
+        const soporteTipos = {};
+        Object.keys(req.body).forEach(key => {
+            if (key.startsWith('soporte_tipo_')) {
+                const index = key.replace('soporte_tipo_', '');
+                soporteTipos[index] = req.body[key];
+            }
+        });
+
+        const resultado = await facturaService.corregirFacturaCompleta(
+            id,
+            datosActualizados,
+            files,
+            documentosEliminar,
+            soporteTipos,
+            userId
+        );
 
         res.status(200).json({
             success: true,

@@ -134,3 +134,13 @@ export async function annulInvoice(id, observacion) {
         observacion
     });
 }
+
+/**
+ * Correct invoice with full data and file management (RUTA_1)
+ * @param {number} id - Invoice ID
+ * @param {FormData} formData - Form data with invoice data and files
+ * @returns {Promise<Object>} Updated invoice
+ */
+export async function correctInvoice(id, formData) {
+    return upload(`/facturas/${id}/corregir`, formData);
+}

@@ -288,6 +288,9 @@ function renderActions(invoice, user) {
             <button class="btn btn-warning" id="btnCorregir" style="width: 100%; margin-bottom: 0.5rem;">
                 ✏️ Corregir Datos
             </button>
+            <button class="btn btn-danger" id="btnAnular" style="width: 100%; margin-bottom: 0.5rem;">
+                🚫 Anular Factura
+            </button>
         `);
     }
 
@@ -402,6 +405,10 @@ function renderActions(invoice, user) {
  * Attach event listeners to action buttons
  */
 function attachActionListeners() {
+    // RUTA_1 actions
+    document.getElementById('btnEnviarRevision')?.addEventListener('click', handleSendToReview);
+    document.getElementById('btnCorregir')?.addEventListener('click', handleCorrect);
+
     // Approve
     document.getElementById('btnAprobar')?.addEventListener('click', handleApprove);
 
@@ -799,3 +806,39 @@ window.deleteDocument = async function (documentoId) {
         }
     );
 };
+
+/**
+ * Handle send to review action (RUTA_1)
+ */
+async function handleSendToReview() {
+    showConfirm(
+        'Enviar a Revisión',
+        '¿Está seguro que desea enviar esta factura a revisión?',
+        async () => {
+            try {
+                const { updateInvoiceState } = await import('../services/invoice.service.js');
+                await updateInvoiceState(currentInvoice.factura_id, {
+                    accion: 'ENVIAR_REVISION',
+                    observacion: 'Factura enviada a revisión'
+                });
+
+                showSuccess('Éxito', 'Factura enviada a revisión correctamente');
+
+                // Reload invoice
+                const updated = await getInvoiceById(currentInvoice.factura_id);
+                currentInvoice = updated;
+                renderInvoiceDetail(document.getElementById('viewContainer'));
+            } catch (error) {
+                showError('Error', error.message || 'No se pudo enviar la factura a revisión');
+            }
+        }
+    );
+}
+
+/**
+ * Handle correct invoice action (RUTA_1)
+ */
+async function handleCorrect() {
+    navigateTo(`corregir-factura/${currentInvoice.factura_id}`);
+}
+
