@@ -1458,7 +1458,8 @@ const corregirFacturaCompleta = async (facturaId, datosActualizados, files, docu
         if (files.soportes && files.soportes.length > 0) {
             for (let i = 0; i < files.soportes.length; i++) {
                 const file = files.soportes[i];
-                const tipoDocumento = soporteTipos[i] ? `SOPORTE_${soporteTipos[i]}` : 'SOPORTE';
+                // Use the support type name directly (sent from frontend)
+                const tipoDocumento = soporteTipos[i] || 'SOPORTE';
 
                 await client.query(`
                     INSERT INTO factura_documentos (

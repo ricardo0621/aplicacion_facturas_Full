@@ -341,7 +341,9 @@ async function handleSubmit(e) {
             const file = supportFiles[index].files[0];
             if (file && typeSelect.value) {
                 formData.append('soportes', file);
-                formData.append(`soporte_tipo_${index}`, typeSelect.value);
+                // Send the selected option's text (name) instead of value (ID)
+                const selectedOption = typeSelect.options[typeSelect.selectedIndex];
+                formData.append(`soporte_tipo_${index}`, selectedOption.text);
             }
         });
 
