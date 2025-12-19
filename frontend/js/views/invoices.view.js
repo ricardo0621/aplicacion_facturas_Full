@@ -40,6 +40,7 @@ export async function renderInvoicesView(container) {
             </div>
             <div class="card-body">
                 <div class="grid grid-cols-4">
+                    ${hasRole(CONSTANTS.ROLES.RUTA_1) ? `
                     <div class="form-group">
                         <label class="form-label">Estado</label>
                         <select class="form-select" id="filterEstado">
@@ -52,6 +53,7 @@ export async function renderInvoicesView(container) {
                             <option value="ANULADA">Anuladas</option>
                         </select>
                     </div>
+                    ` : ''}
                     <div class="form-group">
                         <label class="form-label">Número de Factura</label>
                         <input type="text" class="form-control" id="filterNumero" placeholder="Buscar...">
