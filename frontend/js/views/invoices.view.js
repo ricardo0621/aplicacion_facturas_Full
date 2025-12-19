@@ -45,12 +45,16 @@ export async function renderInvoicesView(container) {
                         <label class="form-label">Estado</label>
                         <select class="form-select" id="filterEstado">
                             <option value="">Todos</option>
-                            <option value="RUTA_1">En Gestión</option>
-                            <option value="RUTA_2">En Revisión</option>
-                            <option value="RUTA_3">En Contabilidad</option>
-                            <option value="RUTA_4">En Tesorería</option>
-                            <option value="FINALIZADA">Finalizadas</option>
-                            <option value="ANULADA">Anuladas</option>
+                            <option value="RUTA_1">Devuelta (En Gestión)</option>
+                            <option value="RUTA_2_DIRECCION_ADMINISTRATIVA">Dirección Administrativa</option>
+                            <option value="RUTA_2_DIRECCION_FINANCIERA">Dirección Financiera</option>
+                            <option value="RUTA_2_DIRECCION_MEDICA">Dirección Médica</option>
+                            <option value="RUTA_2_DIRECCION_GENERAL">Dirección General</option>
+                            <option value="RUTA_2_CONTROL_INTERNO">Control Interno</option>
+                            <option value="RUTA_3">Contabilidad</option>
+                            <option value="RUTA_4">Tesorería</option>
+                            <option value="ANULADA">Anulada</option>
+                            <option value="FINALIZADA">Pagada</option>
                         </select>
                     </div>
                     ` : ''}
@@ -60,7 +64,11 @@ export async function renderInvoicesView(container) {
                     </div>
                     <div class="form-group">
                         <label class="form-label">Proveedor</label>
-                        <input type="text" class="form-control" id="filterProveedor" placeholder="Nombre o NIT">
+                        <input type="text" class="form-control" id="filterProveedor" placeholder="Nombre">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">NIT Proveedor</label>
+                        <input type="text" class="form-control" id="filterNit" placeholder="NIT">
                     </div>
                     <div class="form-group">
                         <label class="form-label">&nbsp;</label>
@@ -117,12 +125,15 @@ export async function renderInvoicesView(container) {
     btnApplyFilters.addEventListener('click', applyFilters);
 
     // Enter key on filter inputs
-    ['filterNumero', 'filterProveedor'].forEach(id => {
-        container.querySelector(`#${id}`).addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                applyFilters();
-            }
-        });
+    ['filterNumero', 'filterProveedor', 'filterNit'].forEach(id => {
+        const element = container.querySelector(`#${id}`);
+        if (element) {
+            element.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    applyFilters();
+                }
+            });
+        }
     });
 
     // Load invoices
@@ -133,14 +144,17 @@ export async function renderInvoicesView(container) {
  * Apply filters
  */
 async function applyFilters() {
-    const estado = document.getElementById('filterEstado').value;
+    const estadoElement = document.getElementById('filterEstado');
+    const estado = estadoElement ? estadoElement.value : '';
     const numero = document.getElementById('filterNumero').value.trim();
     const proveedor = document.getElementById('filterProveedor').value.trim();
+    const nit = document.getElementById('filterNit').value.trim();
 
     currentFilters = {};
     if (estado) currentFilters.estado = estado;
     if (numero) currentFilters.numero_factura = numero;
     if (proveedor) currentFilters.proveedor = proveedor;
+    if (nit) currentFilters.nit = nit;
 
     await loadInvoices();
 }

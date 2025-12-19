@@ -107,7 +107,8 @@ const listarFacturas = async (req, res) => {
             numero_factura: req.query.numero_factura || null,
             nit: req.query.nit || null,
             proveedor: req.query.proveedor || null,
-            estado_codigo: req.query.estado_codigo || null
+            estado_codigo: req.query.estado_codigo || null,
+            estado: req.query.estado || null
         };
 
         const facturas = await facturaService.listarFacturas(filtros, userId);

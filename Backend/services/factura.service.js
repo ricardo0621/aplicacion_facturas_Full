@@ -607,9 +607,9 @@ const listarFacturas = async (filtros, userId) => {
 
         let query = `
             SELECT 
-                f.factura_id, f.numero_factura, f.fecha_emision, f.monto, f.concepto,
+                f.factura_id, f.numero_factura, f.fecha_emision, f.fecha_creacion, f.monto, f.concepto,
                 f.documento_nombre, f.is_anulada, f.rol_aprobador_ruta2,
-                p.nombre AS proveedor_nombre,
+                p.nombre AS proveedor_nombre, p.nit AS nit_proveedor,
                 e.nombre AS estado_nombre, e.codigo AS estado_codigo,
                 u.nombre AS usuario_creacion_nombre
             FROM facturas f
@@ -691,9 +691,9 @@ const listarFacturas = async (filtros, userId) => {
         }
 
         // Filtro de estado (para Route 1 principalmente)
-        if (filtros.estado_codigo) {
+        if (filtros.estado_codigo || filtros.estado) {
             query += ` AND e.codigo = $${pCount}`;
-            params.push(filtros.estado_codigo);
+            params.push(filtros.estado_codigo || filtros.estado);
             pCount++;
         }
 
@@ -723,12 +723,6 @@ const listarFacturas = async (filtros, userId) => {
             pCount++;
         }
 
-        // Filtro por estado (para usuarios Ruta 1)
-        if (filtros.estado_codigo) {
-            query += ` AND e.codigo = $${pCount}`;
-            params.push(filtros.estado_codigo);
-            pCount++;
-        }
 
         // Filtro por dirección que aprobó
         // Busca en el historial de facturas para encontrar aquellas aprobadas por una dirección específica
@@ -748,6 +742,7 @@ const listarFacturas = async (filtros, userId) => {
         query += ` ORDER BY f.fecha_actualizacion DESC`;
 
         const res = await client.query(query, params);
+
         return res.rows;
     } finally {
         client.release();
