@@ -80,7 +80,18 @@ const calcularTransicion = (estadoActualCodigo, accion, estadoRetornoCorreccion 
         };
     }
 
-    // 5. PAGO (Ruta 4)
+    // 5. ENVIAR A REVISIÓN (Desde RUTA_1 a RUTA_2)
+    if (accion === 'ENVIAR_REVISION') {
+        if (estadoActualCodigo !== ESTADOS.RUTA_1) {
+            throw new Error('Solo se puede enviar a revisión desde Ruta 1 (En Gestión).');
+        }
+        // Si la factura fue rechazada y tiene un estado de retorno, volver a ese estado
+        // Si no, ir a RUTA_2 por defecto
+        const destino = estadoRetornoCorreccion || ESTADOS.RUTA_2;
+        return { nuevoEstado: destino, esRechazo: false };
+    }
+
+    // 6. PAGO (Ruta 4)
     if (accion === ACCIONES.PAGAR) {
         if (estadoActualCodigo !== ESTADOS.RUTA_4) {
             throw new Error('Solo Tesorería (Ruta 4) puede marcar como pagada.');

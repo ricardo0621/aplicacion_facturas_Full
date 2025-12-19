@@ -270,7 +270,8 @@ const procesarFactura = async (facturaId, accion, userId, datosAdicionales = {})
 
         // 3. Calcular Transición
         let estadoRetornoCorreccionCodigo = null;
-        if (accion === ACCIONES.CORREGIR && factura.estado_retorno_id) {
+        // Para CORREGIR y ENVIAR_REVISION, obtener el estado de retorno si existe
+        if ((accion === ACCIONES.CORREGIR || accion === 'ENVIAR_REVISION') && factura.estado_retorno_id) {
             estadoRetornoCorreccionCodigo = await getEstadoCodigoById(client, factura.estado_retorno_id);
         }
 
