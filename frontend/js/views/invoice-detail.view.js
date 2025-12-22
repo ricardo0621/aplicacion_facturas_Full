@@ -841,6 +841,34 @@ window.downloadDocument = function (path, filename) {
     showToast('Info', 'Descarga de documentos en desarrollo', 'info');
 };
 
+// Global function for downloading documents
+window.downloadDocument = function (filePath, fileName) {
+    let relativePath = filePath;
+
+    console.log('Original path:', filePath);
+
+    // Find and remove "FacturasClinica" and everything before it
+    const facturaIndex = relativePath.indexOf('FacturasClinica');
+    if (facturaIndex !== -1) {
+        // Skip past "FacturasClinica\" or "FacturasClinica/"
+        relativePath = relativePath.substring(facturaIndex + 'FacturasClinica'.length);
+        // Remove leading slash or backslash
+        if (relativePath.startsWith('\\') || relativePath.startsWith('/')) {
+            relativePath = relativePath.substring(1);
+        }
+    }
+
+    // Replace all backslashes with forward slashes
+    relativePath = relativePath.replace(/\\/g, '/');
+
+    console.log('Cleaned path:', relativePath);
+    console.log('Final URL:', `/soportes_facturas/${relativePath}`);
+
+    // Open file in new tab - browser will handle download
+    window.open(`/soportes_facturas/${relativePath}`, '_blank');
+};
+
+
 // Global function for deleting documents
 window.deleteDocument = async function (documentoId) {
     showConfirm(
