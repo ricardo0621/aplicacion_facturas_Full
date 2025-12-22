@@ -5,7 +5,7 @@
 
 import { get } from '../services/api.service.js';
 import { showToast, showSuccess, showError } from '../components/toast.js';
-import { CONSTANTS } from '../config/config.js';
+import { CONFIG, CONSTANTS } from '../config/config.js';
 import { formatCurrency, formatDate, getEstadoBadgeColor } from '../utils/formatters.js';
 import { navigateTo } from '../utils/router.js';
 import { createPagination, attachPaginationListeners, getPaginatedItems } from '../components/pagination.js';
@@ -129,7 +129,12 @@ export async function renderAdvancedSearchView(container) {
             <div class="card-body">
                 <div class="flex justify-between items-center mb-lg">
                     <h3 style="margin: 0;">Resultados de Búsqueda</h3>
-                    <span id="resultsCount" class="badge badge-primary">0 resultados</span>
+                    <div style="display: flex; gap: 1rem; align-items: center;">
+                        <span id="resultsCount" class="badge badge-primary">0 resultados</span>
+                        <button id="exportExcelBtn" class="btn btn-success btn-sm" style="display: none;">
+                            📥 Exportar a Excel
+                        </button>
+                    </div>
                 </div>
 
                 <div class="table-container">
@@ -165,6 +170,7 @@ export async function renderAdvancedSearchView(container) {
     // Attach event listeners
     document.getElementById('searchForm')?.addEventListener('submit', handleSearch);
     document.getElementById('btnClearFilters')?.addEventListener('click', clearFilters);
+    document.getElementById('exportExcelBtn')?.addEventListener('click', exportToExcel);
 }
 
 /**
@@ -240,12 +246,18 @@ async function handleSearch(e) {
 function renderResults() {
     const tbody = document.getElementById('resultsTableBody');
     const countBadge = document.getElementById('resultsCount');
+    const exportBtn = document.getElementById('exportExcelBtn');
 
     if (!tbody) return;
 
     // Update count
     if (countBadge) {
         countBadge.textContent = `${searchResults.length} resultado${searchResults.length !== 1 ? 's' : ''}`;
+    }
+
+    // Show/hide export button
+    if (exportBtn) {
+        exportBtn.style.display = searchResults.length > 0 ? 'inline-block' : 'none';
     }
 
     if (searchResults.length === 0) {
@@ -367,6 +379,86 @@ function clearFilters() {
                 </td>
             </tr>
         `;
+    }
+}
+
+/**
+ * Export search results to Excel
+ */
+async function exportToExcel() {
+    try {
+        const exportBtn = document.getElementById('exportExcelBtn');
+        const originalText = exportBtn.textContent;
+
+        // Disable button and show loading
+        exportBtn.disabled = true;
+        exportBtn.textContent = '⏳ Exportando...';
+
+        // Get current search filters - SAME AS handleSearch
+        const filters = {
+            numero_factura: document.getElementById('numeroFactura')?.value.trim() || '',
+            proveedor_id: document.getElementById('proveedor')?.value || '',
+            nit: document.getElementById('nitProveedor')?.value.trim() || '',
+            estado: document.getElementById('estado')?.value || '',
+            direccion_aprobo: document.getElementById('direccionAprobo')?.value || '',
+            fecha_desde: document.getElementById('fechaDesde')?.value || '',
+            fecha_hasta: document.getElementById('fechaHasta')?.value || '',
+            monto_desde: document.getElementById('montoDesde')?.value || '',
+            monto_hasta: document.getElementById('montoHasta')?.value || ''
+        };
+
+        // Remove empty filters
+        Object.keys(filters).forEach(key => {
+            if (!filters[key]) delete filters[key];
+        });
+
+        // Make request to export endpoint
+        const response = await fetch(`${CONFIG.API_BASE_URL}/export/facturas`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+            },
+            body: JSON.stringify(filters)
+        });
+
+        if (!response.ok) {
+            throw new Error('Error al exportar a Excel');
+        }
+
+        // Get filename from response headers or use default
+        const contentDisposition = response.headers.get('Content-Disposition');
+        let filename = 'Facturas.xlsx';
+        if (contentDisposition) {
+            const matches = /filename="([^"]+)"/.exec(contentDisposition);
+            if (matches && matches[1]) {
+                filename = matches[1];
+            }
+        }
+
+        // Download file
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+
+        showSuccess('Éxito', 'Archivo Excel descargado correctamente');
+
+    } catch (error) {
+        console.error('Error exporting to Excel:', error);
+        showError('Error', 'No se pudo exportar a Excel');
+    } finally {
+        // Re-enable button
+        const exportBtn = document.getElementById('exportExcelBtn');
+        if (exportBtn) {
+            exportBtn.disabled = false;
+            exportBtn.textContent = '📥 Exportar a Excel';
+        }
     }
 }
 
