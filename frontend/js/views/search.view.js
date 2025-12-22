@@ -8,9 +8,12 @@ import { showToast, showSuccess, showError } from '../components/toast.js';
 import { CONSTANTS } from '../config/config.js';
 import { formatCurrency, formatDate, getEstadoBadgeColor } from '../utils/formatters.js';
 import { navigateTo } from '../utils/router.js';
+import { createPagination, attachPaginationListeners, getPaginatedItems } from '../components/pagination.js';
 
 let providers = [];
 let searchResults = [];
+let currentPage = 1;
+let pageSize = 10;
 
 /**
  * Render advanced search view
@@ -150,6 +153,8 @@ export async function renderAdvancedSearchView(container) {
                         </tbody>
                     </table>
                 </div>
+                <!-- Pagination Controls -->
+                <div id="searchPaginationContainer"></div>
             </div>
         </div>
     `;
@@ -251,10 +256,29 @@ function renderResults() {
                 </td>
             </tr>
         `;
+        document.getElementById('searchPaginationContainer').innerHTML = '';
         return;
     }
 
-    tbody.innerHTML = searchResults.map(factura => {
+    // Reset to first page when search results change
+    if (currentPage > Math.ceil(searchResults.length / pageSize)) {
+        currentPage = 1;
+    }
+
+    renderSearchResultsPage();
+}
+
+/**
+ * Render current page of search results
+ */
+function renderSearchResultsPage() {
+    const tbody = document.getElementById('resultsTableBody');
+    const paginationContainer = document.getElementById('searchPaginationContainer');
+
+    // Get paginated items
+    const paginatedResults = getPaginatedItems(searchResults, currentPage, pageSize);
+
+    tbody.innerHTML = paginatedResults.map(factura => {
         const badgeColor = getEstadoBadgeColor(factura.estado_codigo);
         const estadoLabel = CONSTANTS.ESTADO_LABELS[factura.estado_codigo] || factura.estado_nombre || 'Sin estado';
 
@@ -277,6 +301,48 @@ function renderResults() {
             </tr>
         `;
     }).join('');
+
+    // Render pagination controls
+    paginationContainer.innerHTML = createPagination({
+        currentPage,
+        pageSize,
+        totalItems: searchResults.length,
+        onPageChange: handleSearchPageChange,
+        onPageSizeChange: handleSearchPageSizeChange
+    });
+
+    // Attach pagination event listeners
+    attachPaginationListeners(handleSearchPageChange, handleSearchPageSizeChange);
+}
+
+/**
+ * Handle page change for search results
+ * @param {number|string} page - Page number or 'prev'/'next'/'last'
+ */
+function handleSearchPageChange(page) {
+    const totalPages = Math.ceil(searchResults.length / pageSize);
+
+    if (page === 'prev') {
+        currentPage = Math.max(1, currentPage - 1);
+    } else if (page === 'next') {
+        currentPage = Math.min(totalPages, currentPage + 1);
+    } else if (page === 'last') {
+        currentPage = totalPages;
+    } else {
+        currentPage = page;
+    }
+
+    renderSearchResultsPage();
+}
+
+/**
+ * Handle page size change for search results
+ * @param {number} newPageSize - New page size
+ */
+function handleSearchPageSizeChange(newPageSize) {
+    pageSize = newPageSize;
+    currentPage = 1; // Reset to first page
+    renderSearchResultsPage();
 }
 
 /**
