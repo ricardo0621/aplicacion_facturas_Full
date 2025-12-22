@@ -44,20 +44,50 @@ const storage = multer.diskStorage({
         cb(null, UPLOAD_BASE_PATH);
     },
     filename: (req, file, cb) => {
-        // Obtener información del request
-        const facturaId = req.params.id || req.body.factura_id || 'TEMP';
-        const tipoDoc = req.body.tipo_documento || file.fieldname || 'DOC';
-        const timestamp = Date.now();
+        // Obtener número de factura del body (enviado desde frontend)
+        const numeroFactura = req.body.numero_factura || 'TEMP';
 
-        // Limpiar nombre original (sin espacios ni caracteres especiales)
+        // Determinar el tipo de documento
+        let tipoDoc = 'DOC';
+
+        // Si es el documento principal (campo 'documento')
+        if (file.fieldname === 'documento') {
+            tipoDoc = 'FACTURA';
+        }
+        // Si es un documento de soporte (campo 'soportes')
+        else if (file.fieldname === 'soportes') {
+            // Buscar el tipo de soporte correspondiente
+            // Los tipos vienen como soporte_tipo_0, soporte_tipo_1, etc.
+            const soporteTipos = Object.keys(req.body)
+                .filter(key => key.startsWith('soporte_tipo_'))
+                .map(key => req.body[key]);
+
+            // Si hay tipos de soporte, usar el primero disponible
+            // (en una carga múltiple, cada archivo tendrá su tipo)
+            if (soporteTipos.length > 0) {
+                // Contar cuántos archivos 'soportes' ya se procesaron
+                // para saber qué índice usar
+                if (!req.fileCount) req.fileCount = 0;
+                tipoDoc = soporteTipos[req.fileCount] || 'SOPORTE';
+                req.fileCount++;
+            } else {
+                tipoDoc = 'SOPORTE';
+            }
+        }
+        // Si viene tipo_documento explícito en el body
+        else if (req.body.tipo_documento) {
+            tipoDoc = req.body.tipo_documento;
+        }
+
+        // Generar código único corto (últimos 8 dígitos del timestamp)
+        const codigoUnico = Date.now().toString().slice(-8);
+
+        // Obtener extensión del archivo
         const ext = path.extname(file.originalname);
-        const nombreBase = path.basename(file.originalname, ext)
-            .replace(/\s+/g, '_')           // Espacios a guiones bajos
-            .replace(/[^a-zA-Z0-9_-]/g, '') // Solo alfanuméricos, guiones y guiones bajos
-            .substring(0, 50);              // Máximo 50 caracteres
 
-        // Formato mejorado: FAC-123_FACTURA_1733876543210_nombre_original.pdf
-        const fileName = `FAC-${facturaId}_${tipoDoc}_${timestamp}_${nombreBase}${ext}`;
+        // Formato corto: NumeroFactura-TipoSoporte-CodigoUnico.ext
+        // Ejemplo: kokokoko-RUT-12345678.pdf
+        const fileName = `${numeroFactura}-${tipoDoc}-${codigoUnico}${ext}`;
 
         cb(null, fileName);
     }

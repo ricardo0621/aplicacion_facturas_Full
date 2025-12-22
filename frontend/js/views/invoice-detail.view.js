@@ -210,7 +210,7 @@ function renderDocuments(documentos) {
                             <span style="font-size: 1.5rem;">📄</span>
                             <strong style="color: var(--gray-200);">${doc.tipo_documento}</strong>
                         </div>
-                        <p style="font-size: 0.875rem; color: var(--gray-400); margin-bottom: 0.5rem;">
+                        <p style="font-size: 0.875rem; color: var(--gray-400); margin-bottom: 0.5rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${doc.nombre_personalizado || doc.nombre_archivo}">
                             ${doc.nombre_personalizado || doc.nombre_archivo}
                         </p>
                         <div style="display: flex; gap: 0.5rem;">
