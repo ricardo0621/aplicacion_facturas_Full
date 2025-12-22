@@ -153,13 +153,14 @@ export async function renderAdvancedSearchView(container) {
                                 <th>Proveedor</th>
                                 <th>Fecha</th>
                                 <th>Monto</th>
+                                <th>Usuario Factura</th>
                                 <th>Estado</th>
                                 <th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody id="resultsTableBody">
                             <tr>
-                                <td colspan="6" class="text-center" style="color: var(--gray-400);">
+                                <td colspan="7" class="text-center" style="color: var(--gray-400);">
                                     Utiliza los filtros para buscar facturas
                                 </td>
                             </tr>
@@ -295,7 +296,7 @@ function renderResults() {
     if (searchResults.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="6" class="text-center" style="color: var(--gray-400);">
+                <td colspan="7" class="text-center" style="color: var(--gray-400);">
                     No se encontraron resultados
                 </td>
             </tr>
@@ -332,6 +333,7 @@ function renderSearchResultsPage() {
                 <td>${factura.proveedor_nombre || '-'}</td>
                 <td>${formatDate(factura.fecha_emision || factura.fecha_creacion)}</td>
                 <td><strong>${formatCurrency(factura.monto)}</strong></td>
+                <td>${factura.usuario_creacion_nombre || '-'}</td>
                 <td>
                     <span class="badge badge-${badgeColor}">
                         ${estadoLabel}
