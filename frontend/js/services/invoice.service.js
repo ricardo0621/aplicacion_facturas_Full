@@ -144,3 +144,21 @@ export async function annulInvoice(id, observacion) {
 export async function correctInvoice(id, formData) {
     return upload(`/facturas/${id}/corregir`, formData);
 }
+
+/**
+ * Get invoice statistics
+ * @returns {Promise<Object>} Statistics data
+ */
+export async function getStatistics() {
+    const response = await get('/facturas/estadisticas');
+    return response.estadisticas || response;
+}
+
+/**
+ * Delete invoice permanently (SUPER_ADMIN only)
+ * @param {number} id - Invoice ID
+ * @returns {Promise<Object>} Response
+ */
+export async function deleteInvoice(id) {
+    return del(`/facturas/${id}`);
+}

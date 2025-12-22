@@ -3,7 +3,7 @@
  * Displays list of invoices with filters and actions
  */
 
-import { getInvoices } from '../services/invoice.service.js';
+import { getInvoices, getStatistics } from '../services/invoice.service.js';
 import { formatCurrency, formatDate, getEstadoLabel, getEstadoBadgeColor } from '../utils/formatters.js';
 import { showToast } from '../components/toast.js';
 import { navigateTo } from '../utils/router.js';
@@ -20,6 +20,14 @@ let allInvoices = [];
 export async function renderInvoicesView(container) {
     const user = getCurrentUser();
 
+    // Load statistics
+    let stats = null;
+    try {
+        stats = await getStatistics();
+    } catch (error) {
+        console.error('Error loading statistics:', error);
+    }
+
     container.innerHTML = `
         <div class="flex justify-between items-center mb-xl">
             <div>
@@ -32,6 +40,33 @@ export async function renderInvoicesView(container) {
                 </button>
             ` : ''}
         </div>
+
+        ${stats ? `
+        <!-- Statistics Section -->
+        <div class="mb-lg">
+            <h2 style="margin-bottom: 1rem; color: var(--gray-100);">📊 Resumen Histórico</h2>
+            <div class="grid grid-cols-3 gap-md">
+                <div class="card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    <div class="card-body" style="text-align: center;">
+                        <div style="font-size: 2.5rem; font-weight: bold; color: white;">${stats.total || 0}</div>
+                        <div style="color: rgba(255,255,255,0.9); margin-top: 0.5rem;">Total Facturas Historico</div>
+                    </div>
+                </div>
+                <div class="card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                    <div class="card-body" style="text-align: center;">
+                        <div style="font-size: 2.5rem; font-weight: bold; color: white;">${stats.mis_pendientes || 0}</div>
+                        <div style="color: rgba(255,255,255,0.9); margin-top: 0.5rem;">Mis Facturas Pendientes</div>
+                    </div>
+                </div>
+                <div class="card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                    <div class="card-body" style="text-align: center;">
+                        <div style="font-size: 2.5rem; font-weight: bold; color: white;">${formatCurrency(stats.mi_monto_total || 0)}</div>
+                        <div style="color: rgba(255,255,255,0.9); margin-top: 0.5rem;">Monto de Mis Facturas Pendientes</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        ` : ''}
 
         <!-- Filters -->
         <div class="card mb-lg">

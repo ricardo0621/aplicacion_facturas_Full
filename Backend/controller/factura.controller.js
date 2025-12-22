@@ -312,7 +312,9 @@ const obtenerHistorial = async (req, res) => {
  */
 const obtenerEstadisticas = async (req, res) => {
     try {
-        const estadisticas = await facturaService.obtenerEstadisticas();
+        // Pasar userId si está autenticado para obtener estadísticas del usuario
+        const userId = req.user ? req.user.usuario_id : null;
+        const estadisticas = await facturaService.obtenerEstadisticas(userId);
 
         res.status(200).json({
             success: true,

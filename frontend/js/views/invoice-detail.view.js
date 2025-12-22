@@ -3,7 +3,7 @@
  * Displays invoice details with workflow actions
  */
 
-import { getInvoiceById, approveInvoice, rejectInvoice, markAsPaid, annulInvoice, addInvoiceDocument } from '../services/invoice.service.js';
+import { getInvoiceById, approveInvoice, rejectInvoice, markAsPaid, annulInvoice, addInvoiceDocument, deleteInvoice } from '../services/invoice.service.js';
 import { getDocumentTypes } from '../services/document-type.service.js';
 import { formatCurrency, formatDate, formatDateTime, getEstadoLabel, getEstadoBadgeColor, getRoleLabel, getAccionLabel } from '../utils/formatters.js';
 import { showToast, showSuccess, showError } from '../components/toast.js';
@@ -388,6 +388,9 @@ function renderActions(invoice, user) {
     // Admin actions
     if (hasRole(CONSTANTS.ROLES.SUPER_ADMIN)) {
         buttons.push(`
+            <button class="btn btn-danger" id="btnEliminarFactura" style="width: 100%; margin-bottom: 0.5rem; background: linear-gradient(135deg, #ff0000 0%, #8b0000 100%);">
+                🗑️ Eliminar Factura
+            </button>
             <button class="btn btn-danger" id="btnAnular" style="width: 100%; margin-bottom: 0.5rem;">
                 🚫 Anular Factura
             </button>
@@ -420,6 +423,9 @@ function attachActionListeners() {
 
     // Annul
     document.getElementById('btnAnular')?.addEventListener('click', handleAnnul);
+
+    // Delete (SUPER_ADMIN only)
+    document.getElementById('btnEliminarFactura')?.addEventListener('click', handleDelete);
 
     // Add Support (RUTA_3)
     document.getElementById('btnCorregirSimple')?.addEventListener('click', handleAddSupport);
@@ -681,6 +687,56 @@ function handleAnnul() {
         ]
     });
 }
+
+/**
+ * Handle delete invoice (SUPER_ADMIN only)
+ */
+function handleDelete() {
+    const content = document.createElement('div');
+    content.innerHTML = `
+        <div style="text-align: center; padding: 1rem;">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">⚠️</div>
+            <p style="font-size: 1.1rem; margin-bottom: 1rem; color: var(--danger);">
+                <strong>¡ADVERTENCIA!</strong>
+            </p>
+            <p style="margin-bottom: 1rem;">
+                Esta acción eliminará permanentemente la factura <strong>${currentInvoice.numero_factura}</strong> 
+                y todos sus documentos asociados.
+            </p>
+            <p style="color: var(--danger); font-weight: bold;">
+                Esta acción NO se puede deshacer.
+            </p>
+        </div>
+    `;
+
+    showModal({
+        title: 'Eliminar Factura Permanentemente',
+        content,
+        buttons: [
+            {
+                text: 'Cancelar',
+                class: 'btn-secondary'
+            },
+            {
+                text: 'Eliminar Permanentemente',
+                class: 'btn-danger',
+                onClick: async () => {
+                    try {
+                        await deleteInvoice(currentInvoice.factura_id);
+                        showSuccess('Éxito', 'Factura eliminada permanentemente');
+                        hideModal();
+                        // Redirect to invoices list
+                        navigateTo('invoices');
+                    } catch (error) {
+                        showError('Error', error.message || 'Error al eliminar la factura');
+                    }
+                },
+                closeOnClick: false
+            }
+        ]
+    });
+}
+
 /**
  * Handle add support document (RUTA_3 and RUTA_4)
  */

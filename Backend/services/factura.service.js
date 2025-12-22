@@ -799,17 +799,109 @@ const obtenerHistorialFactura = async (id) => {
     }
 };
 
-const obtenerEstadisticas = async () => {
+const obtenerEstadisticas = async (userId = null) => {
     const client = await db.connect();
     try {
-        const res = await client.query(`
+        // Estadísticas generales
+        const generalRes = await client.query(`
             SELECT 
                 COUNT(*) as total,
                 COUNT(CASE WHEN estado_id = (SELECT estado_id FROM estados WHERE codigo='FINALIZADA') THEN 1 END) as finalizadas,
-                COUNT(CASE WHEN is_anulada = TRUE THEN 1 END) as anuladas
+                COUNT(CASE WHEN is_anulada = TRUE THEN 1 END) as anuladas,
+                COALESCE(SUM(monto), 0) as monto_total
             FROM facturas
         `);
-        return res.rows[0];
+
+        const stats = generalRes.rows[0];
+
+        // Si se proporciona userId, agregar estadísticas del usuario
+        if (userId) {
+            // Obtener TODOS los roles del usuario
+            const roleRes = await client.query(`
+                SELECT r.codigo as rol_codigo
+                FROM usuarios u
+                JOIN usuario_roles ur ON u.usuario_id = ur.usuario_id
+                JOIN roles r ON ur.rol_id = r.rol_id
+                WHERE u.usuario_id = $1
+            `, [userId]);
+
+            if (roleRes.rows.length > 0) {
+                // Obtener todos los códigos de rol
+                const rolesCodigos = roleRes.rows.map(row => row.rol_codigo);
+
+                console.log('DEBUG - User roles:', rolesCodigos);
+
+                // Para RUTA_1: Facturas creadas por el usuario que están pendientes
+                if (rolesCodigos.includes('RUTA_1')) {
+                    const userRes = await client.query(`
+                        SELECT 
+                            COUNT(*) as mis_pendientes,
+                            COALESCE(SUM(monto), 0) as mi_monto_total
+                        FROM facturas
+                        WHERE usuario_creacion_id = $1
+                        AND estado_id != (SELECT estado_id FROM estados WHERE codigo='FINALIZADA')
+                        AND is_anulada = FALSE
+                    `, [userId]);
+
+                    stats.mis_pendientes = parseInt(userRes.rows[0].mis_pendientes);
+                    stats.mi_monto_total = parseFloat(userRes.rows[0].mi_monto_total);
+                }
+                // Para RUTA_2: Facturas en TODOS los estados de RUTA_2 que corresponden a los roles del usuario
+                else if (rolesCodigos.some(rol => rol.startsWith('RUTA_2_'))) {
+                    // Obtener todos los códigos de estado RUTA_2 del usuario
+                    const estadosCodigos = rolesCodigos.filter(rol => rol.startsWith('RUTA_2_'));
+
+                    console.log('DEBUG - RUTA_2 estados to check:', estadosCodigos);
+
+                    const userRes = await client.query(`
+                        SELECT 
+                            COUNT(*) as mis_pendientes,
+                            COALESCE(SUM(monto), 0) as mi_monto_total
+                        FROM facturas f
+                        JOIN estados e ON f.estado_id = e.estado_id
+                        WHERE e.codigo = ANY($1)
+                        AND f.is_anulada = FALSE
+                    `, [estadosCodigos]);
+
+                    console.log('DEBUG - Query result:', userRes.rows[0]);
+
+                    stats.mis_pendientes = parseInt(userRes.rows[0].mis_pendientes);
+                    stats.mi_monto_total = parseFloat(userRes.rows[0].mi_monto_total);
+                }
+                // Para RUTA_3: Facturas en estado RUTA_3
+                else if (rolesCodigos.includes('RUTA_3')) {
+                    const userRes = await client.query(`
+                        SELECT 
+                            COUNT(*) as mis_pendientes,
+                            COALESCE(SUM(monto), 0) as mi_monto_total
+                        FROM facturas f
+                        JOIN estados e ON f.estado_id = e.estado_id
+                        WHERE e.codigo = 'RUTA_3'
+                        AND f.is_anulada = FALSE
+                    `);
+
+                    stats.mis_pendientes = parseInt(userRes.rows[0].mis_pendientes);
+                    stats.mi_monto_total = parseFloat(userRes.rows[0].mi_monto_total);
+                }
+                // Para RUTA_4: Facturas en estado RUTA_4
+                else if (rolesCodigos.includes('RUTA_4')) {
+                    const userRes = await client.query(`
+                        SELECT 
+                            COUNT(*) as mis_pendientes,
+                            COALESCE(SUM(monto), 0) as mi_monto_total
+                        FROM facturas f
+                        JOIN estados e ON f.estado_id = e.estado_id
+                        WHERE e.codigo = 'RUTA_4'
+                        AND f.is_anulada = FALSE
+                    `);
+
+                    stats.mis_pendientes = parseInt(userRes.rows[0].mis_pendientes);
+                    stats.mi_monto_total = parseFloat(userRes.rows[0].mi_monto_total);
+                }
+            }
+        }
+
+        return stats;
     } finally {
         client.release();
     }
