@@ -9,9 +9,12 @@ import { showToast } from '../components/toast.js';
 import { navigateTo } from '../utils/router.js';
 import { getCurrentUser, hasRole } from '../utils/auth.js';
 import { CONSTANTS } from '../config/config.js';
+import { createPagination, attachPaginationListeners, getPaginatedItems } from '../components/pagination.js';
 
 let currentFilters = {};
 let allInvoices = [];
+let currentPage = 1;
+let pageSize = 10;
 
 /**
  * Render invoices list view
@@ -147,6 +150,8 @@ export async function renderInvoicesView(container) {
                         </tbody>
                     </table>
                 </div>
+                <!-- Pagination Controls -->
+                <div id="paginationContainer"></div>
             </div>
         </div>
     `;
@@ -217,32 +222,16 @@ async function loadInvoices() {
                     </td>
                 </tr>
             `;
+            document.getElementById('paginationContainer').innerHTML = '';
             return;
         }
 
-        tbody.innerHTML = allInvoices.map(invoice => `
-            <tr>
-                <td><strong>${invoice.numero_factura}</strong></td>
-                <td>${invoice.proveedor_nombre || '-'}</td>
-                <td>${invoice.nit_proveedor || '-'}</td>
-                <td>${formatCurrency(invoice.monto)}</td>
-                <td>
-                    <span class="badge badge-${getEstadoBadgeColor(invoice.estado_codigo)}">
-                        ${getEstadoLabel(invoice.estado_codigo)}
-                    </span>
-                </td>
-                <td>${formatDate(invoice.fecha_emision)}</td>
-                <td>${formatDate(invoice.fecha_creacion, true)}</td>
-                <td>
-                    <button 
-                        class="btn btn-sm btn-primary" 
-                        onclick="window.viewInvoiceDetail(${invoice.factura_id})"
-                    >
-                        Ver Detalle
-                    </button>
-                </td>
-            </tr>
-        `).join('');
+        // Reset to first page when filters change
+        if (currentPage > Math.ceil(allInvoices.length / pageSize)) {
+            currentPage = 1;
+        }
+
+        renderInvoicesPage();
 
     } catch (error) {
         console.error('Error loading invoices:', error);
@@ -255,6 +244,84 @@ async function loadInvoices() {
             </tr>
         `;
     }
+}
+
+/**
+ * Render current page of invoices
+ */
+function renderInvoicesPage() {
+    const tbody = document.getElementById('invoicesTableBody');
+    const paginationContainer = document.getElementById('paginationContainer');
+
+    // Get paginated items
+    const paginatedInvoices = getPaginatedItems(allInvoices, currentPage, pageSize);
+
+    // Render invoices
+    tbody.innerHTML = paginatedInvoices.map(invoice => `
+        <tr>
+            <td><strong>${invoice.numero_factura}</strong></td>
+            <td>${invoice.proveedor_nombre || '-'}</td>
+            <td>${invoice.nit_proveedor || '-'}</td>
+            <td>${formatCurrency(invoice.monto)}</td>
+            <td>
+                <span class="badge badge-${getEstadoBadgeColor(invoice.estado_codigo)}">
+                    ${getEstadoLabel(invoice.estado_codigo)}
+                </span>
+            </td>
+            <td>${formatDate(invoice.fecha_emision)}</td>
+            <td>${formatDate(invoice.fecha_creacion, true)}</td>
+            <td>
+                <button 
+                    class="btn btn-sm btn-primary" 
+                    onclick="window.viewInvoiceDetail(${invoice.factura_id})"
+                >
+                    Ver Detalle
+                </button>
+            </td>
+        </tr>
+    `).join('');
+
+    // Render pagination controls
+    paginationContainer.innerHTML = createPagination({
+        currentPage,
+        pageSize,
+        totalItems: allInvoices.length,
+        onPageChange: handlePageChange,
+        onPageSizeChange: handlePageSizeChange
+    });
+
+    // Attach pagination event listeners
+    attachPaginationListeners(handlePageChange, handlePageSizeChange);
+}
+
+/**
+ * Handle page change
+ * @param {number|string} page - Page number or 'prev'/'next'/'last'
+ */
+function handlePageChange(page) {
+    const totalPages = Math.ceil(allInvoices.length / pageSize);
+
+    if (page === 'prev') {
+        currentPage = Math.max(1, currentPage - 1);
+    } else if (page === 'next') {
+        currentPage = Math.min(totalPages, currentPage + 1);
+    } else if (page === 'last') {
+        currentPage = totalPages;
+    } else {
+        currentPage = page;
+    }
+
+    renderInvoicesPage();
+}
+
+/**
+ * Handle page size change
+ * @param {number} newPageSize - New page size
+ */
+function handlePageSizeChange(newPageSize) {
+    pageSize = newPageSize;
+    currentPage = 1; // Reset to first page
+    renderInvoicesPage();
 }
 
 // Make viewInvoiceDetail global
