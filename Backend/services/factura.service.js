@@ -990,6 +990,13 @@ const busquedaAvanzada = async (filtros, userId) => {
             pCount++;
         }
 
+        // Filtro por ID de usuario que cargó
+        if (filtros.usuario_creacion_id) {
+            query += ` AND f.usuario_creacion_id = $${pCount}`;
+            params.push(filtros.usuario_creacion_id);
+            pCount++;
+        }
+
         // Filtro por número de factura
         if (filtros.numero_factura) {
             query += ` AND f.numero_factura ILIKE $${pCount}`;

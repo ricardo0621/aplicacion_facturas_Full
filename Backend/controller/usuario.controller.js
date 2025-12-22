@@ -355,6 +355,49 @@ const listarUsuariosRuta2 = async (req, res) => {
 };
 
 /**
+ * Listar usuarios con rol RUTA_1 (Gestores de Facturas)
+ */
+const listarUsuariosRuta1 = async (req, res) => {
+    try {
+        const db = require('../config/db');
+        const client = await db.connect();
+
+        try {
+            const query = `
+                SELECT DISTINCT
+                    u.usuario_id,
+                    u.nombre,
+                    u.email
+                FROM usuarios u
+                JOIN usuario_roles ur ON u.usuario_id = ur.usuario_id
+                JOIN roles r ON ur.rol_id = r.rol_id
+                WHERE r.codigo = 'RUTA_1'
+                  AND u.activo = true
+                ORDER BY u.nombre
+            `;
+
+            const result = await client.query(query);
+
+            res.status(200).json({
+                success: true,
+                count: result.rows.length,
+                usuarios: result.rows
+            });
+
+        } finally {
+            client.release();
+        }
+    } catch (error) {
+        console.error('Error al listar usuarios RUTA_1:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Error al listar usuarios RUTA_1',
+            message: error.message
+        });
+    }
+};
+
+/**
  * Asignar roles y permisos a un usuario (solo SUPER_ADMIN)
  */
 const asignarRolesYPermisos = async (req, res) => {
@@ -418,6 +461,7 @@ module.exports = {
     asignarRoles,
     listarRoles,
     listarUsuariosRuta2,
+    listarUsuariosRuta1,
     asignarRolesYPermisos,
     obtenerRolesYPermisos
 };

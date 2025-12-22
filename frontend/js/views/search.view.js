@@ -71,6 +71,14 @@ export async function renderAdvancedSearchView(container) {
                             </select>
                         </div>
 
+                        <!-- Usuario Factura -->
+                        <div class="form-group">
+                            <label class="form-label">Usuario Factura</label>
+                            <select class="form-select" id="usuarioFactura">
+                                <option value="">Todos los usuarios</option>
+                            </select>
+                        </div>
+
                         <!-- Approval Direction Filter -->
                         <div class="form-group">
                             <label class="form-label">Dirección que Aprobó</label>
@@ -164,8 +172,9 @@ export async function renderAdvancedSearchView(container) {
         </div>
     `;
 
-    // Load providers for dropdown
+    // Load providers and users for dropdowns
     await loadProviders();
+    await loadUsers();
 
     // Attach event listeners
     document.getElementById('searchForm')?.addEventListener('submit', handleSearch);
@@ -196,6 +205,28 @@ async function loadProviders() {
 }
 
 /**
+ * Load RUTA_1 users for dropdown
+ */
+async function loadUsers() {
+    try {
+        const response = await get('/usuarios/ruta1');
+        const users = response.usuarios || [];
+
+        const select = document.getElementById('usuarioFactura');
+        if (select && users.length > 0) {
+            users.forEach(user => {
+                const option = document.createElement('option');
+                option.value = user.usuario_id;
+                option.textContent = user.nombre;
+                select.appendChild(option);
+            });
+        }
+    } catch (error) {
+        console.error('Error loading users:', error);
+    }
+}
+
+/**
  * Handle search form submission
  */
 async function handleSearch(e) {
@@ -207,6 +238,7 @@ async function handleSearch(e) {
         nit: document.getElementById('nitProveedor').value.trim(),
         estado: document.getElementById('estado').value,
         direccion_aprobo: document.getElementById('direccionAprobo').value,
+        usuario_creacion_id: document.getElementById('usuarioFactura').value,
         fecha_desde: document.getElementById('fechaDesde').value,
         fecha_hasta: document.getElementById('fechaHasta').value,
         monto_desde: document.getElementById('montoDesde').value,
@@ -401,6 +433,7 @@ async function exportToExcel() {
             nit: document.getElementById('nitProveedor')?.value.trim() || '',
             estado: document.getElementById('estado')?.value || '',
             direccion_aprobo: document.getElementById('direccionAprobo')?.value || '',
+            usuario_creacion_id: document.getElementById('usuarioFactura')?.value || '',
             fecha_desde: document.getElementById('fechaDesde')?.value || '',
             fecha_hasta: document.getElementById('fechaHasta')?.value || '',
             monto_desde: document.getElementById('montoDesde')?.value || '',

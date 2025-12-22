@@ -11,6 +11,7 @@ router.post('/', usuarioController.crearUsuario);
 router.get('/', usuarioController.listarUsuarios);
 router.get('/roles', usuarioController.listarRoles);
 router.get('/ruta2', usuarioController.listarUsuariosRuta2); // Listar usuarios de Ruta 2
+router.get('/ruta1', usuarioController.listarUsuariosRuta1); // Listar usuarios de Ruta 1
 router.get('/:id', usuarioController.obtenerUsuario);
 router.put('/:id', usuarioController.actualizarUsuario);
 router.delete('/:id', usuarioController.desactivarUsuario);
