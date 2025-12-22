@@ -64,7 +64,7 @@ function parseParams(pattern, path) {
  * Handle route change
  */
 function handleRouteChange() {
-    const hash = window.location.hash.slice(1) || 'dashboard';
+    const hash = window.location.hash.slice(1) || 'facturas';
     currentRoute = hash;
 
     // Try exact match first
@@ -82,9 +82,9 @@ function handleRouteChange() {
         }
     }
 
-    // No match found, go to dashboard
+    // No match found, go to facturas
     console.warn('Route not found:', hash);
-    navigateTo('dashboard');
+    navigateTo('facturas');
 }
 
 /**

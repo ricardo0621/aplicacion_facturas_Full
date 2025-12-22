@@ -829,8 +829,6 @@ const obtenerEstadisticas = async (userId = null) => {
                 // Obtener todos los códigos de rol
                 const rolesCodigos = roleRes.rows.map(row => row.rol_codigo);
 
-                console.log('DEBUG - User roles:', rolesCodigos);
-
                 // Para RUTA_1: Facturas creadas por el usuario que están pendientes
                 if (rolesCodigos.includes('RUTA_1')) {
                     const userRes = await client.query(`
@@ -851,8 +849,6 @@ const obtenerEstadisticas = async (userId = null) => {
                     // Obtener todos los códigos de estado RUTA_2 del usuario
                     const estadosCodigos = rolesCodigos.filter(rol => rol.startsWith('RUTA_2_'));
 
-                    console.log('DEBUG - RUTA_2 estados to check:', estadosCodigos);
-
                     const userRes = await client.query(`
                         SELECT 
                             COUNT(*) as mis_pendientes,
@@ -862,8 +858,6 @@ const obtenerEstadisticas = async (userId = null) => {
                         WHERE e.codigo = ANY($1)
                         AND f.is_anulada = FALSE
                     `, [estadosCodigos]);
-
-                    console.log('DEBUG - Query result:', userRes.rows[0]);
 
                     stats.mis_pendientes = parseInt(userRes.rows[0].mis_pendientes);
                     stats.mi_monto_total = parseFloat(userRes.rows[0].mi_monto_total);
