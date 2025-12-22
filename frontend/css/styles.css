@@ -115,7 +115,13 @@ html {
 
 body {
     font-family: var(--font-sans);
-    background: linear-gradient(135deg, var(--bg-dark) 0%, var(--bg-dark-secondary) 100%);
+    background-image:
+        linear-gradient(rgba(17, 24, 39, 0.85), rgba(17, 24, 39, 0.85)),
+        url('../assets/background.jpg');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    background-repeat: no-repeat;
     color: var(--gray-100);
     line-height: 1.6;
     min-height: 100vh;
