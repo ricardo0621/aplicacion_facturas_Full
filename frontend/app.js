@@ -30,87 +30,43 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Register routes
-    registerRoute('dashboard', () => {
-        updateActiveNav('dashboard');
-        const dashboardView = document.getElementById('dashboardView');
-        if (dashboardView) {
-            dashboardView.classList.remove('hidden');
-        }
-        // Clear view container
-        if (viewContainer) {
-            viewContainer.innerHTML = '';
-        }
-    });
-
     registerRoute('facturas', () => {
         updateActiveNav('facturas');
-        const dashboardView = document.getElementById('dashboardView');
-        if (dashboardView) {
-            dashboardView.classList.add('hidden');
-        }
         renderInvoicesView(viewContainer);
     });
 
     registerRoute('factura/:id', (params) => {
         updateActiveNav('facturas');
-        const dashboardView = document.getElementById('dashboardView');
-        if (dashboardView) {
-            dashboardView.classList.add('hidden');
-        }
         renderInvoiceDetailView(viewContainer, params);
     });
 
     registerRoute('usuarios', () => {
         updateActiveNav('usuarios');
-        const dashboardView = document.getElementById('dashboardView');
-        if (dashboardView) {
-            dashboardView.classList.add('hidden');
-        }
         renderUsersView(viewContainer);
     });
 
     registerRoute('proveedores', () => {
         updateActiveNav('proveedores');
-        const dashboardView = document.getElementById('dashboardView');
-        if (dashboardView) {
-            dashboardView.classList.add('hidden');
-        }
         renderProvidersView(viewContainer);
     });
 
     registerRoute('nueva-factura', () => {
         updateActiveNav('facturas');
-        const dashboardView = document.getElementById('dashboardView');
-        if (dashboardView) {
-            dashboardView.classList.add('hidden');
-        }
         renderCreateInvoiceView(viewContainer);
     });
 
     registerRoute('corregir-factura/:id', (params) => {
         updateActiveNav('facturas');
-        const dashboardView = document.getElementById('dashboardView');
-        if (dashboardView) {
-            dashboardView.classList.add('hidden');
-        }
         renderCorrectInvoiceView(viewContainer, params.id);
     });
 
     registerRoute('tipos-soporte', () => {
         updateActiveNav('tipos-soporte');
-        const dashboardView = document.getElementById('dashboardView');
-        if (dashboardView) {
-            dashboardView.classList.add('hidden');
-        }
         renderDocumentTypesView(viewContainer);
     });
 
     registerRoute('busqueda', () => {
         updateActiveNav('busqueda');
-        const dashboardView = document.getElementById('dashboardView');
-        if (dashboardView) {
-            dashboardView.classList.add('hidden');
-        }
         renderAdvancedSearchView(viewContainer);
     });
 
