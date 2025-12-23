@@ -6,6 +6,17 @@ const path = require('path');
 // Cargar variables de entorno
 dotenv.config();
 
+// Validar variables de entorno requeridas
+const requiredEnvVars = ['DATABASE_URL', 'JWT_SECRET'];
+const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
+
+if (missingEnvVars.length > 0) {
+    console.error('❌ Error: Variables de entorno requeridas no configuradas:');
+    console.error('   -', missingEnvVars.join('\n   - '));
+    console.error('\nPor favor, configura estas variables en el archivo .env');
+    process.exit(1);
+}
+
 // =============================================================
 // 1. IMPORTACIÓN DE RUTAS
 // =============================================================
@@ -16,6 +27,7 @@ const usuarioRoutes = require('./routes/usuario.route');
 const proveedorRoutes = require('./routes/proveedor.route');
 const tipoSoporteRoutes = require('./routes/tipoSoporte.route');
 const exportRoutes = require('./routes/export.route');
+const { errorHandler } = require('./middlewares/error.middleware');
 
 // =============================================================
 // 2. CONFIGURACIÓN INICIAL DE EXPRESS
@@ -84,6 +96,9 @@ app.use((req, res, next) => {
         details: `La URL solicitada: ${req.method} ${req.originalUrl} no existe en el servidor.`
     });
 });
+
+// Middleware de error global (debe ser el último)
+app.use(errorHandler);
 
 // =============================================================
 // 7. INICIO DEL SERVIDOR

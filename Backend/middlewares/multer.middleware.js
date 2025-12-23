@@ -5,7 +5,7 @@ const fs = require('fs');
 // =============================================================
 // CONFIGURACIÓN DE ALMACENAMIENTO (Destination)
 // =============================================================
-const destinationDir = 'D:\\SoportesFacturas'; // Carpeta de destino que definiste
+const destinationDir = 'D:\\FacturasClinica'; // Debe coincidir con SOPORTES_PATH en server.js
 
 // Asegurarse de que el directorio exista
 if (!fs.existsSync(destinationDir)) {
@@ -29,7 +29,7 @@ const storage = multer.diskStorage({
 // =============================================================
 // CONFIGURACIÓN DE INSTANCIA DE MULTER
 // =============================================================
-const upload = multer({ 
+const upload = multer({
     storage: storage,
     limits: { fileSize: 20 * 1024 * 1024 }, // Limitar a 20MB
     fileFilter: (req, file, cb) => {

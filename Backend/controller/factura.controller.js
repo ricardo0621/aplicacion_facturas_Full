@@ -83,18 +83,21 @@ const cargarFactura = async (req, res) => {
         console.error('Error en cargarFactura:', error);
 
         if (error.message.includes('proveedor')) {
-            return res.status(400).json({ error: 'Error de validación', details: error.message });
+            return res.status(400).json({ error: 'Error de validación', message: error.message });
         }
         if (error.message.includes('Ya existe')) {
-            return res.status(409).json({ error: 'Conflicto', details: error.message });
+            return res.status(409).json({
+                error: 'Conflicto',
+                message: 'Este número de factura está en proceso. No se pueden crear facturas duplicadas a menos que la anterior esté anulada.'
+            });
         }
         if (error.message.includes('rol de Ruta 2')) {
-            return res.status(400).json({ error: 'Error de validación', details: error.message });
+            return res.status(400).json({ error: 'Error de validación', message: error.message });
         }
 
         res.status(500).json({
             error: 'Error interno al procesar la factura',
-            details: error.message
+            message: error.message
         });
     }
 };

@@ -843,29 +843,33 @@ window.downloadDocument = function (path, filename) {
 
 // Global function for downloading documents
 window.downloadDocument = function (filePath, fileName) {
-    let relativePath = filePath;
-
     console.log('Original path:', filePath);
 
-    // Find and remove "FacturasClinica" and everything before it
-    const facturaIndex = relativePath.indexOf('FacturasClinica');
+    let cleanPath = filePath;
+
+    // Remove any leading/trailing whitespace and control characters
+    cleanPath = cleanPath.trim().replace(/[\x00-\x1F\x7F]/g, '');
+
+    // If path contains FacturasClinica, extract just the filename
+    const facturaIndex = cleanPath.indexOf('FacturasClinica');
     if (facturaIndex !== -1) {
-        // Skip past "FacturasClinica\" or "FacturasClinica/"
-        relativePath = relativePath.substring(facturaIndex + 'FacturasClinica'.length);
-        // Remove leading slash or backslash
-        if (relativePath.startsWith('\\') || relativePath.startsWith('/')) {
-            relativePath = relativePath.substring(1);
-        }
+        // Get everything after FacturasClinica
+        cleanPath = cleanPath.substring(facturaIndex + 'FacturasClinica'.length);
+        // Remove any leading slashes or backslashes
+        cleanPath = cleanPath.replace(/^[\\\/]+/, '');
     }
 
     // Replace all backslashes with forward slashes
-    relativePath = relativePath.replace(/\\/g, '/');
+    cleanPath = cleanPath.replace(/\\/g, '/');
 
-    console.log('Cleaned path:', relativePath);
-    console.log('Final URL:', `/soportes_facturas/${relativePath}`);
+    // Remove any remaining control characters
+    cleanPath = cleanPath.replace(/[\x00-\x1F\x7F]/g, '');
+
+    console.log('Cleaned path:', cleanPath);
+    console.log('Final URL:', `/soportes_facturas/${cleanPath}`);
 
     // Open file in new tab - browser will handle download
-    window.open(`/soportes_facturas/${relativePath}`, '_blank');
+    window.open(`/soportes_facturas/${cleanPath}`, '_blank');
 };
 
 

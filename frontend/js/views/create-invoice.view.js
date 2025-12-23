@@ -323,11 +323,8 @@ async function handleSubmit(e) {
     } catch (error) {
         console.error('Error creating invoice:', error);
 
-        // Extract meaningful error message
-        let errorMessage = 'No se pudo crear la factura';
-        if (error.message && error.message !== '[object Undefined]') {
-            errorMessage = error.message;
-        }
+        // The backend now sends user-friendly messages
+        const errorMessage = error.message || 'No se pudo crear la factura';
 
         showError('Error', errorMessage);
 

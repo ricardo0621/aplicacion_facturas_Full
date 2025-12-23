@@ -44,15 +44,38 @@ const crearFactura = async (facturaData, file, userId) => {
         if (proveedorRes.rows.length === 0) throw new Error(`El proveedor con NIT ${nit_proveedor} no existe en la base de datos.`);
         const proveedorId = proveedorRes.rows[0].id;
 
-        // 2. Determinar Estado Inicial (RUTA_2)
+        // 2. Validar que no exista factura duplicada (mismo número + proveedor)
+        // Solo se permite duplicado si la factura existente está ANULADA
+        const duplicadoRes = await client.query(`
+            SELECT f.factura_id, f.numero_factura, e.codigo as estado_codigo, e.nombre as estado_nombre
+            FROM facturas f
+            JOIN estados e ON f.estado_id = e.estado_id
+            WHERE f.numero_factura = $1 AND f.proveedor_id = $2
+        `, [numero_factura, proveedorId]);
+
+        if (duplicadoRes.rows.length > 0) {
+            const facturaExistente = duplicadoRes.rows[0];
+
+            // Si la factura existente NO está anulada, rechazar
+            if (facturaExistente.estado_codigo !== 'ANULADA') {
+                throw new Error(
+                    `Ya existe una factura con el número ${numero_factura} para este proveedor. ` +
+                    `Estado actual: ${facturaExistente.estado_nombre}. ` +
+                    `Solo se permite crear facturas duplicadas si la anterior está anulada.`
+                );
+            }
+            // Si está anulada, permitir continuar
+        }
+
+        // 3. Determinar Estado Inicial (RUTA_2)
         const estadoInicialId = await getEstadoIdByCodigo(client, ESTADOS.RUTA_2);
 
-        // 3. Obtener Ruta ID (RUTA_1)
+        // 4. Obtener Ruta ID (RUTA_1)
         const ruta1Res = await client.query("SELECT rol_id FROM roles WHERE codigo = 'RUTA_1'");
         if (ruta1Res.rows.length === 0) throw new Error("Rol RUTA_1 no configurado.");
         const rutaId = ruta1Res.rows[0].rol_id;
 
-        // 4. Insertar Factura
+        // 5. Insertar Factura
         const insertQuery = `
             INSERT INTO facturas (
                 numero_factura, proveedor_id, fecha_emision, monto, concepto,
@@ -67,7 +90,7 @@ const crearFactura = async (facturaData, file, userId) => {
             estadoInicialId, userId, rutaId, file.filename
         ])).rows[0];
 
-        // 5. Guardar documento inicial en factura_documentos
+        // 6. Guardar documento inicial en factura_documentos
         await client.query(`
             INSERT INTO factura_documentos (
                 factura_id, tipo_documento, nombre_archivo, nombre_personalizado,
@@ -84,7 +107,7 @@ const crearFactura = async (facturaData, file, userId) => {
             'Documento soporte inicial de la factura'
         ]);
 
-        // 6. Registrar Historial
+        // 7. Registrar Historial
         await client.query(`
             INSERT INTO factura_historial (factura_id, estado_nuevo_id, usuario_id, accion, observacion)
             VALUES ($1, $2, $3, $4, $5)
@@ -123,7 +146,30 @@ const crearFacturaConMultiplesArchivos = async (facturaData, files, tiposDocumen
         if (proveedorRes.rows.length === 0) throw new Error(`El proveedor con NIT ${nit_proveedor} no existe en la base de datos.`);
         const proveedorId = proveedorRes.rows[0].id;
 
-        // 2. Determinar Estado Inicial basado en el rol de Ruta 2
+        // 2. Validar que no exista factura duplicada (mismo número + proveedor)
+        // Solo se permite duplicado si la factura existente está ANULADA
+        const duplicadoRes = await client.query(`
+            SELECT f.factura_id, f.numero_factura, e.codigo as estado_codigo, e.nombre as estado_nombre
+            FROM facturas f
+            JOIN estados e ON f.estado_id = e.estado_id
+            WHERE f.numero_factura = $1 AND f.proveedor_id = $2
+        `, [numero_factura, proveedorId]);
+
+        if (duplicadoRes.rows.length > 0) {
+            const facturaExistente = duplicadoRes.rows[0];
+
+            // Si la factura existente NO está anulada, rechazar
+            if (facturaExistente.estado_codigo !== 'ANULADA') {
+                throw new Error(
+                    `Ya existe una factura con el número ${numero_factura} para este proveedor. ` +
+                    `Estado actual: ${facturaExistente.estado_nombre}. ` +
+                    `Solo se permite crear facturas duplicadas si la anterior está anulada.`
+                );
+            }
+            // Si está anulada, permitir continuar
+        }
+
+        // 3. Determinar Estado Inicial basado en el rol de Ruta 2
         let estadoInicialCodigo = ESTADOS.RUTA_2; // Por defecto (legacy)
 
         if (rolAprobadorRuta2) {
@@ -137,15 +183,15 @@ const crearFacturaConMultiplesArchivos = async (facturaData, files, tiposDocumen
 
         const estadoInicialId = await getEstadoIdByCodigo(client, estadoInicialCodigo);
 
-        // 3. Obtener Ruta ID (RUTA_1) - Not needed for insert, just for validation
+        // 4. Obtener Ruta ID (RUTA_1) - Not needed for insert, just for validation
         const ruta1Res = await client.query("SELECT rol_id FROM roles WHERE codigo = 'RUTA_1'");
         if (ruta1Res.rows.length === 0) throw new Error("Rol RUTA_1 no configurado.");
 
-        // 4. Encontrar el primer archivo tipo FACTURA para referencia principal
+        // 5. Encontrar el primer archivo tipo FACTURA para referencia principal
         const indexFactura = tiposDocumento.findIndex(tipo => tipo === 'FACTURA');
         const archivoFactura = indexFactura !== -1 ? files[indexFactura] : files[0];
 
-        // 5. Insertar Factura (con rol_aprobador_ruta2)
+        // 6. Insertar Factura (con rol_aprobador_ruta2)
         const insertQuery = `
             INSERT INTO facturas (
                 numero_factura, proveedor_id, fecha_emision, monto, concepto,
@@ -162,7 +208,7 @@ const crearFacturaConMultiplesArchivos = async (facturaData, files, tiposDocumen
             rolAprobadorRuta2, nit_proveedor
         ])).rows[0];
 
-        // 6. Guardar TODOS los archivos en factura_documentos
+        // 7. Guardar TODOS los archivos en factura_documentos
         for (let i = 0; i < files.length; i++) {
             const file = files[i];
             const tipo = tiposDocumento[i];
@@ -775,7 +821,14 @@ const obtenerDocumentosFactura = async (id) => {
             WHERE factura_id = $1
             ORDER BY fecha_subida ASC
         `, [id]);
-        return res.rows;
+
+        // Normalizar rutas de archivo reemplazando backslashes con forward slashes
+        const documentos = res.rows.map(doc => ({
+            ...doc,
+            ruta_archivo: doc.ruta_archivo ? doc.ruta_archivo.replace(/\\/g, '/') : doc.ruta_archivo
+        }));
+
+        return documentos;
     } finally {
         client.release();
     }
@@ -1555,11 +1608,12 @@ const corregirFacturaCompleta = async (facturaId, datosActualizados, files, docu
                 // Use the support type name directly (sent from frontend)
                 const tipoDocumento = soporteTipos[i] || 'SOPORTE';
 
+                // Guardar solo el nombre del archivo, no la ruta completa
                 await client.query(`
                     INSERT INTO factura_documentos (
                         factura_id, tipo_documento, nombre_archivo, ruta_archivo
                     ) VALUES ($1, $2, $3, $4)
-                `, [facturaId, tipoDocumento, file.filename, file.path]);
+                `, [facturaId, tipoDocumento, file.filename, file.filename]);
             }
         }
 
