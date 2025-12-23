@@ -23,6 +23,7 @@ exports.exportInvoicesToExcel = async (req, res) => {
             { header: 'NIT', key: 'nit_proveedor', width: 15 },
             { header: 'Monto', key: 'monto', width: 15 },
             { header: 'Estado', key: 'estado_nombre', width: 25 },
+            { header: 'Usuario Factura', key: 'usuario_nombre', width: 25 },
             { header: 'Fecha Emisión', key: 'fecha_emision', width: 15 },
             { header: 'Fecha Creación', key: 'fecha_creacion', width: 20 },
             { header: 'Concepto', key: 'concepto', width: 40 }
@@ -46,6 +47,7 @@ exports.exportInvoicesToExcel = async (req, res) => {
                 nit_proveedor: factura.nit_proveedor || '-',
                 monto: factura.monto,
                 estado_nombre: factura.estado_nombre || '-',
+                usuario_nombre: factura.usuario_creacion_nombre || '-',
                 fecha_emision: factura.fecha_emision ? new Date(factura.fecha_emision) : '-',
                 fecha_creacion: factura.fecha_creacion ? new Date(factura.fecha_creacion) : '-',
                 concepto: factura.concepto || '-'
