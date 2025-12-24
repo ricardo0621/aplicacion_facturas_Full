@@ -1,14 +1,14 @@
-# Rewrite rules para redirigir /api a la aplicación Node.js
-
+# Configuración para aplicación Node.js
 RewriteEngine On
 
-# Redirigir todas las peticiones /api a la aplicación Node.js
+# Proxy para API - Redirigir /api a Node.js en puerto 3500
 RewriteCond %{REQUEST_URI} ^/api
-RewriteRule ^api/(.*)$ http://127.0.0.1:3500/api/$1 [P,L]
+RewriteRule ^(.*)$ http://127.0.0.1:3500/$1 [P,L]
 
-# Permitir acceso a archivos estáticos
+# Permitir acceso a archivos estáticos del frontend
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_URI} !^/api
 
-# Servir index.html para rutas del frontend
-RewriteRule ^(.*)$ index.html [L]
+# Servir index.html para rutas del frontend (SPA)
+RewriteRule ^(.*)$ /index.html [L]

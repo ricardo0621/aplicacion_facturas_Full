@@ -4,8 +4,8 @@
  */
 
 export const CONFIG = {
-    // API Configuration - Using direct port since app is on root domain
-    API_BASE_URL: 'https://facturas.clinicasanfrancisco.com.co:3500/api',
+    // API Configuration - Using subdomain
+    API_BASE_URL: 'https://api.facturas.clinicasanfrancisco.com.co/api',
 
     // Storage Keys
     TOKEN_KEY: 'auth_token',
