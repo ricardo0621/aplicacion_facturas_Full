@@ -1,14 +1,20 @@
+# DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION BEGIN
+PassengerAppRoot "/home3/clinica2/facturas-api"
+PassengerBaseURI "/api"
+PassengerNodejs "/home3/clinica2/nodevenv/facturas-api/20/bin/node"
+PassengerAppType node
+PassengerStartupFile server.js
+# DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION END
+
 # Configuración para aplicación Node.js
 RewriteEngine On
 
-# Proxy para API - Redirigir /api a Node.js en puerto 3500
-RewriteCond %{REQUEST_URI} ^/api
-RewriteRule ^(.*)$ http://127.0.0.1:3500/$1 [P,L]
-
 # Permitir acceso a archivos estáticos del frontend
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteCond %{REQUEST_URI} !^/api
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
 
-# Servir index.html para rutas del frontend (SPA)
+# Las peticiones a /api las maneja Passenger (configurado arriba)
+# Las demás rutas sirven index.html para el SPA
+RewriteCond %{REQUEST_URI} !^/api
 RewriteRule ^(.*)$ /index.html [L]
