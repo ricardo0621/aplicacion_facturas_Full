@@ -325,7 +325,8 @@ const procesarFactura = async (facturaId, accion, userId, datosAdicionales = {})
             factura.estado_codigo,
             accion,
             estadoRetornoCorreccionCodigo,
-            estadoRuta2Aprobador
+            estadoRuta2Aprobador,
+            factura.rol_aprobador_ruta2  // Pasar el rol de aprobador
         );
 
         const nuevoEstadoId = await getEstadoIdByCodigo(client, transicion.nuevoEstado);
