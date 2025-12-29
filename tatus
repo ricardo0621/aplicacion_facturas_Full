@@ -1,0 +1,210 @@
+[33mcommit d505f25cf9ea9a45b12519eb3fe223ab61558393[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mdev[m[33m)[m
+Author: Ricardo Castillo <ricardo_0621@hotmail.com>
+Date:   Mon Dec 29 09:15:19 2025 -0500
+
+     Docs: Added project completion summary
+
+[33mcommit b2b65494f9f1c43fec43fd1391e53333450fa9fc[m
+Author: Ricardo Castillo <ricardo_0621@hotmail.com>
+Date:   Mon Dec 29 09:13:19 2025 -0500
+
+     Fix: Corrección completa de rutas de archivos y compatibilidad PostgreSQL 9.2
+    
+    - Fixed: 10 hardcoded Windows paths replaced with environment variables
+    - Fixed: File downloads now working with /api/soportes_facturas
+    - Fixed: Database stores only filenames, not full paths
+    - Fixed: Invoice document replacement in corrections
+    - Fixed: PostgreSQL 9.2 compatibility (removed array_remove, FILTER)
+    - Fixed: SSL disabled for Dongee hosting
+    - Fixed: Passenger configuration in .htaccess
+    - Added: Comprehensive deployment documentation
+    - Added: Troubleshooting guide
+    - Added: Version notes and changelog
+    
+    All features tested and working in production.
+
+[33mcommit 93af8ac9d8b0cf370d215d53116533a212cd6a93[m
+Author: Ricardo Castillo <ricardo_0621@hotmail.com>
+Date:   Wed Dec 24 09:59:38 2025 -0500
+
+    se creo carpeta deploy la cual contiene todo lo necesario para subir al hosting
+
+[33mcommit 0f152248ca8f3c5433e3e3cdaf143ae99e35bfde[m
+Author: Ricardo Castillo <ricardo_0621@hotmail.com>
+Date:   Tue Dec 23 11:26:23 2025 -0500
+
+    app con archivo deploy para subir a dongee
+
+[33mcommit 67c7e82e156bc155e1dd817821a7804f5f08b6e7[m
+Author: Ricardo Castillo <ricardo_0621@hotmail.com>
+Date:   Tue Dec 23 08:57:16 2025 -0500
+
+    descarga excel con usuario hasta aca todo esta ok para produccion
+
+[33mcommit a32811046939164a6bbf8712764c17beae51ce1f[m
+Author: Ricardo Castillo <ricardo_0621@hotmail.com>
+Date:   Tue Dec 23 08:15:22 2025 -0500
+
+    restrinccion implementada, limpieza dashboard
+
+[33mcommit 860c8a242a59e892c2f591c90094bed4168dbad4[m
+Author: Ricardo Castillo <ricardo_0621@hotmail.com>
+Date:   Tue Dec 23 07:45:51 2025 -0500
+
+    reestructura de carpetas y restrincion de facturas duplicadas
+
+[33mcommit 9a7127fac8111f49fc8d5f3db082d51c459038a2[m[33m ([m[1;32mmaster[m[33m)[m
+Author: Ricardo Castillo <ricardo_0621@hotmail.com>
+Date:   Mon Dec 22 15:27:25 2025 -0500
+
+    add: filtro de usuario creo factura
+
+[33mcommit 1f3efac50b8a501cb60beb240f8e411b67cc8490[m
+Author: Ricardo Castillo <ricardo_0621@hotmail.com>
+Date:   Mon Dec 22 15:10:40 2025 -0500
+
+    add: filtro usuario creador factura
+
+[33mcommit 3603ffddf3b29efa5d4e433b36d3d892eb6df369[m
+Author: Ricardo Castillo <ricardo_0621@hotmail.com>
+Date:   Mon Dec 22 14:23:12 2025 -0500
+
+    descarga excel ok
+
+[33mcommit 0e8158539ab3c68038e12e5e6db44e754e95db4d[m
+Author: Ricardo Castillo <ricardo_0621@hotmail.com>
+Date:   Mon Dec 22 13:29:49 2025 -0500
+
+    descarga de archivos ok, falta descargar excel
+
+[33mcommit 53da61bf6b9cab90d135690b0cd84274623acc56[m
+Author: Ricardo Castillo <ricardo_0621@hotmail.com>
+Date:   Mon Dec 22 11:52:07 2025 -0500
+
+    logo y fonfo de pantalla ok
+
+[33mcommit 7a916e6c629789d5d52cebc508ff6e4e38341ffc[m
+Author: Ricardo Castillo <ricardo_0621@hotmail.com>
+Date:   Mon Dec 22 11:33:30 2025 -0500
+
+    paginador de sesion busqueda avanzada ok
+
+[33mcommit a4941d793b0a2b110045779fd4d8e3d8c78ea381[m
+Author: Ricardo Castillo <ricardo_0621@hotmail.com>
+Date:   Mon Dec 22 11:27:15 2025 -0500
+
+    paginador de sesion facturas
+
+[33mcommit fe9e450f18c854912a02cd4213184c4253d24137[m
+Author: Ricardo Castillo <ricardo_0621@hotmail.com>
+Date:   Mon Dec 22 11:06:10 2025 -0500
+
+    todo funcional falta paginador y descargar excel
+
+[33mcommit 82e0ab875e23184b8c8989a6d4d74a631e5990a1[m
+Author: Ricardo Castillo <ricardo_0621@hotmail.com>
+Date:   Mon Dec 22 10:43:23 2025 -0500
+
+    add: sesion estadistica correcta
+
+[33mcommit 2e6ef754779cd270e7a591efff7a8a3df39f4bc8[m
+Author: Ricardo Castillo <ricardo_0621@hotmail.com>
+Date:   Mon Dec 22 07:51:44 2025 -0500
+
+    add: corregir ruta 1 full
+
+[33mcommit 096f13dff576c7c01ef20e0b12bde6ca22c3cc4c[m
+Author: Ricardo Castillo <ricardo_0621@hotmail.com>
+Date:   Fri Dec 19 14:59:30 2025 -0500
+
+    add: aprobacion de ruta 1 ok
+
+[33mcommit e0aef796fd99a006bb9de958990a7280c0b16216[m
+Author: Ricardo Castillo <ricardo_0621@hotmail.com>
+Date:   Fri Dec 19 14:44:58 2025 -0500
+
+    add: correccion de facturas correcto
+
+[33mcommit 0720800f74bb9383835302f70ad1132a7b186146[m
+Author: Ricardo Castillo <ricardo_0621@hotmail.com>
+Date:   Fri Dec 19 14:13:50 2025 -0500
+
+    add: corregir datos, anular factura funcional
+
+[33mcommit 62798ae16a6a0d0cd011fda1066570595a0096e6[m
+Author: Ricardo Castillo <ricardo_0621@hotmail.com>
+Date:   Fri Dec 19 11:54:12 2025 -0500
+
+    add: filtros sesion factura completo
+
+[33mcommit dff6956bd8a3adf14e58fba522c3a3e05f58b111[m
+Author: Ricardo Castillo <ricardo_0621@hotmail.com>
+Date:   Fri Dec 19 10:00:25 2025 -0500
+
+    add: filtro estado solo para ruta 1
+
+[33mcommit b4f04ef9289ae59b4e4058b89ba008d0af752435[m
+Author: Ricardo Castillo <ricardo_0621@hotmail.com>
+Date:   Thu Dec 18 17:01:48 2025 -0500
+
+    add: campo nit proveedor en busqueda avanzada
+
+[33mcommit 4d65d07ee6632ca228935b326beb712ee6bc09c0[m
+Author: Ricardo Castillo <ricardo_0621@hotmail.com>
+Date:   Thu Dec 18 16:57:32 2025 -0500
+
+    add: filtros de busqueda completo
+
+[33mcommit 256208426eeb69f0b946611c200630c649074640[m
+Author: Ricardo Castillo <ricardo_0621@hotmail.com>
+Date:   Thu Dec 18 16:38:35 2025 -0500
+
+    add: filtros de busqueda exitoso falta el boton ver
+
+[33mcommit 8043dbb8d8b0ba20610568e9e7f70be5e41f14e5[m
+Author: Ricardo Castillo <ricardo_0621@hotmail.com>
+Date:   Thu Dec 18 14:11:59 2025 -0500
+
+    add: permisos de busqueda facturas
+
+[33mcommit 6f8cf0d5d57b943b24632a455d57675461c4bea0[m
+Author: Ricardo Castillo <ricardo_0621@hotmail.com>
+Date:   Thu Dec 18 13:56:45 2025 -0500
+
+    add: elimina archivos ruta 4 y ruta 3
+
+[33mcommit f70356cb8a10d73b7c961c481b273411fc2bea02[m
+Author: Ricardo Castillo <ricardo_0621@hotmail.com>
+Date:   Thu Dec 18 13:18:59 2025 -0500
+
+    add: permisos de obligatoriedad para subir documentos en ruta 4 contabilidad
+
+[33mcommit 03c00b94a1413fe63da4798050a9b26040aa0c5a[m
+Author: Ricardo Castillo <ricardo_0621@hotmail.com>
+Date:   Thu Dec 18 10:54:06 2025 -0500
+
+    add: ruta 3 y 4 permita subir archivos soportes
+
+[33mcommit 7ae1bd6896725868c07c99ae7a30781988284983[m
+Author: Ricardo Castillo <ricardo_0621@hotmail.com>
+Date:   Mon Dec 15 15:44:56 2025 -0500
+
+    add: sube soportes con normalida
+
+[33mcommit d791694505193d66e97474151078e69b8ff0c6ee[m
+Author: Ricardo Castillo <ricardo_0621@hotmail.com>
+Date:   Mon Dec 15 14:58:25 2025 -0500
+
+    add: se modifica el historial
+
+[33mcommit f2421d62809eb7fe98944dfcb1aee5dd4827cb2f[m
+Author: Ricardo Castillo <ricardo_0621@hotmail.com>
+Date:   Mon Dec 15 14:34:55 2025 -0500
+
+    add: se crea factura pero esta en ajuste al rechazar
+
+[33mcommit ea05286aaa846b713b8a3bcf4e572f1cd466df07[m
+Author: Ricardo Castillo <ricardo_0621@hotmail.com>
+Date:   Mon Dec 15 13:13:50 2025 -0500
+
+    create: creacion  proyecto nuevo de gestor facturas, hasta aqui aun no funcion el cargue de facturas
